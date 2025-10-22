@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .result { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>Quick Fix Test</h1>
+    <div id="results"></div>
+    <button onclick="runTests()">Run Tests</button>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function runTests() {
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                addResult('Testing service worker communication...', 'info');
+                
+                // Test basic communication
+                const testResponse = await chrome.runtime.sendMessage({ action: 'test' });
+                if (testResponse && testResponse.success) {
+                    addResult('✓ Basic service worker communication working', 'success');
+                } else {
+                    addResult('✗ Basic communication failed', 'error');
+                }
+                
+                // Test daily history
+                addResult('Testing daily history...', 'info');
+                const historyResponse = await chrome.runtime.sendMessage({
+                    action: 'getDailyHistory',
+                    date: new Date().toISOString().split('T')[0]
+                });
+                
+                if (historyResponse && Array.isArray(historyResponse)) {
+                    addResult(`✓ Daily history working: ${historyResponse.length} items`, 'success');
+                } else if (historyResponse && historyResponse.error) {
+                    addResult(`⚠ Daily history error: ${historyResponse.error}`, 'error');
+                } else {
+                    addResult('⚠ Daily history returned unexpected result', 'error');
+                }
+                
+                // Test suggestion data
+                addResult('Testing suggestion data...', 'info');
+                const suggestionResponse = await chrome.runtime.sendMessage({
+                    action: 'getSuggestionData'
+                });
+                
+                if (suggestionResponse && !suggestionResponse.error) {
+                    addResult(`✓ Suggestion data working: ${suggestionResponse.history?.length || 0} history items`, 'success');
+                } else {
+                    addResult(`⚠ Suggestion data error: ${suggestionResponse?.error || 'Unknown error'}`, 'error');
+                }
+                
+                addResult('All tests completed!', 'info');
+                
+            } catch (error) {
+                addResult(`✗ Test failed: ${error.message}`, 'error');
+                console.error('Test error:', error);
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            addResult('Page loaded, ready to test', 'info');
+        });
+    </script>
+</body>
+</html>

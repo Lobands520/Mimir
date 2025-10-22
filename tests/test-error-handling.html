@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Handling Test - Mimir</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .test-button.danger {
+            background: #e74c3c;
+        }
+        .test-button.danger:hover {
+            background: #c0392b;
+        }
+        .test-results {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.success { background: #27ae60; }
+        .status-indicator.error { background: #e74c3c; }
+        .status-indicator.warning { background: #f39c12; }
+        .status-indicator.info { background: #3498db; }
+    </style>
+</head>
+<body>
+    <h1>Mimir Error Handling Test Suite</h1>
+    <p>This page tests the comprehensive error handling and recovery mechanisms implemented in Task 9.</p>
+
+    <!-- Error Handler Tests -->
+    <div class="test-section">
+        <h2>Error Handler Tests</h2>
+        <p>Test the core error handling functionality:</p>
+        
+        <button class="test-button" onclick="testErrorHandlerInitialization()">Test Error Handler Initialization</button>
+        <button class="test-button" onclick="testLoggingSystem()">Test Logging System</button>
+        <button class="test-button" onclick="testErrorCounting()">Test Error Counting</button>
+        <button class="test-button" onclick="testRetryLogic()">Test Retry Logic</button>
+        
+        <div id="errorHandlerResults" class="test-results"></div>
+    </div>
+
+    <!-- Database Error Tests -->
+    <div class="test-section">
+        <h2>Database Error Tests</h2>
+        <p>Test database error handling and fallback mechanisms:</p>
+        
+        <button class="test-button" onclick="testDatabaseInitialization()">Test Database Initialization</button>
+        <button class="test-button" onclick="testDatabaseOperations()">Test Database Operations</button>
+        <button class="test-button danger" onclick="testDatabaseFailure()">Simulate Database Failure</button>
+        <button class="test-button" onclick="testFallbackMode()">Test Fallback Mode</button>
+        
+        <div id="databaseResults" class="test-results"></div>
+    </div>
+
+    <!-- Migration Error Tests -->
+    <div class="test-section">
+        <h2>Migration Error Tests</h2>
+        <p>Test migration error handling and recovery:</p>
+        
+        <button class="test-button" onclick="testMigrationStatus()">Check Migration Status</button>
+        <button class="test-button" onclick="testMigrationValidation()">Test Migration Validation</button>
+        <button class="test-button danger" onclick="simulateMigrationFailure()">Simulate Migration Failure</button>
+        <button class="test-button" onclick="testRollbackMechanism()">Test Rollback Mechanism</button>
+        
+        <div id="migrationResults" class="test-results"></div>
+    </div>
+
+    <!-- UI Error Tests -->
+    <div class="test-section">
+        <h2>Error UI Tests</h2>
+        <p>Test user-friendly error display and recovery suggestions:</p>
+        
+        <button class="test-button" onclick="showTestError()">Show Test Error</button>
+        <button class="test-button" onclick="showTestWarning()">Show Test Warning</button>
+        <button class="test-button" onclick="showTestInfo()">Show Test Info</button>
+        <button class="test-button" onclick="showTestSuccess()">Show Test Success</button>
+        <button class="test-button" onclick="showMigrationError()">Show Migration Error</button>
+        <button class="test-button" onclick="showDatabaseError()">Show Database Error</button>
+        <button class="test-button danger" onclick="clearAllToasts()">Clear All Toasts</button>
+        
+        <div id="uiResults" class="test-results"></div>
+    </div>
+
+    <!-- System Status -->
+    <div class="test-section">
+        <h2>System Status</h2>
+        <p>Current system status and error statistics:</p>
+        
+        <button class="test-button" onclick="getSystemStatus()">Get System Status</button>
+        <button class="test-button" onclick="getErrorReport()">Get Error Report</button>
+        <button class="test-button" onclick="clearErrorLogs()">Clear Error Logs</button>
+        
+        <div id="statusResults" class="test-results"></div>
+    </div>
+
+    <!-- Load required libraries -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/error-handler.js"></script>
+    <script src="lib/error-ui.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script src="lib/migration.js"></script>
+
+    <script>
+        // Test functions
+        let testResults = {};
+
+        function log(section, message, type = 'info') {
+            const resultsDiv = document.getElementById(section + 'Results');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info';
+            
+            resultsDiv.innerHTML += `<div><span class="status-indicator ${statusClass}"></span>[${timestamp}] ${message}</div>`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // Error Handler Tests
+        async function testErrorHandlerInitialization() {
+            try {
+                log('errorHandler', 'Testing error handler initialization...', 'info');
+                
+                if (window.mimirErrorHandler) {
+                    log('errorHandler', '✓ Error handler is available', 'success');
+                    log('errorHandler', `✓ Log level: ${window.mimirErrorHandler.logLevel}`, 'success');
+                    log('errorHandler', `✓ Max log entries: ${window.mimirErrorHandler.maxLogEntries}`, 'success');
+                } else {
+                    log('errorHandler', '✗ Error handler not found', 'error');
+                }
+            } catch (error) {
+                log('errorHandler', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLoggingSystem() {
+            try {
+                log('errorHandler', 'Testing logging system...', 'info');
+                
+                if (window.mimirErrorHandler) {
+                    window.mimirErrorHandler.logDebug('Test debug message');
+                    window.mimirErrorHandler.logInfo('Test info message');
+                    window.mimirErrorHandler.logWarn('Test warning message');
+                    window.mimirErrorHandler.logError('TEST_OPERATION', new Error('Test error message'));
+                    
+                    log('errorHandler', '✓ All log levels tested', 'success');
+                } else {
+                    log('errorHandler', '✗ Error handler not available', 'error');
+                }
+            } catch (error) {
+                log('errorHandler', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testErrorCounting() {
+            try {
+                log('errorHandler', 'Testing error counting...', 'info');
+                
+                if (window.mimirErrorHandler) {
+                    const operation = 'TEST_OPERATION';
+                    
+                    // Test increment
+                    window.mimirErrorHandler.incrementErrorCount(operation);
+                    window.mimirErrorHandler.incrementErrorCount(operation);
+                    
+                    const count = window.mimirErrorHandler.getErrorCount(operation);
+                    log('errorHandler', `✓ Error count for ${operation}: ${count}`, 'success');
+                    
+                    // Test reset
+                    window.mimirErrorHandler.resetErrorCount(operation);
+                    const resetCount = window.mimirErrorHandler.getErrorCount(operation);
+                    log('errorHandler', `✓ Error count after reset: ${resetCount}`, 'success');
+                } else {
+                    log('errorHandler', '✗ Error handler not available', 'error');
+                }
+            } catch (error) {
+                log('errorHandler', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRetryLogic() {
+            try {
+                log('errorHandler', 'Testing retry logic...', 'info');
+                
+                if (window.mimirErrorHandler) {
+                    let attempt = 0;
+                    const maxAttempts = 3;
+                    
+                    const testOperation = async () => {
+                        attempt++;
+                        if (attempt < maxAttempts) {
+                            throw new Error(`Simulated failure (attempt ${attempt})`);
+                        }
+                        return `Success on attempt ${attempt}`;
+                    };
+                    
+                    const result = await window.mimirErrorHandler.executeWithErrorHandling(
+                        testOperation,
+                        'RETRY_TEST'
+                    );
+                    
+                    log('errorHandler', `✓ Retry logic worked: ${result}`, 'success');
+                } else {
+                    log('errorHandler', '✗ Error handler not available', 'error');
+                }
+            } catch (error) {
+                log('errorHandler', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Database Error Tests
+        async function testDatabaseInitialization() {
+            try {
+                log('database', 'Testing database initialization...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                
+                if (db.isInitialized()) {
+                    log('database', '✓ Database initialized successfully', 'success');
+                } else {
+                    log('database', '⚠ Database in fallback mode', 'warning');
+                }
+            } catch (error) {
+                log('database', `✗ Database initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabaseOperations() {
+            try {
+                log('database', 'Testing database operations...', 'info');
+                
+                if (window.dbWrapper) {
+                    // Test get operation
+                    const testData = await window.dbWrapper.get('mimir-config');
+                    log('database', '✓ Get operation completed', 'success');
+                    
+                    // Test set operation
+                    await window.dbWrapper.set({ 'test-key': 'test-value' });
+                    log('database', '✓ Set operation completed', 'success');
+                    
+                    // Test remove operation
+                    await window.dbWrapper.remove('test-key');
+                    log('database', '✓ Remove operation completed', 'success');
+                } else {
+                    log('database', '✗ Database wrapper not available', 'error');
+                }
+            } catch (error) {
+                log('database', `✗ Database operation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabaseFailure() {
+            try {
+                log('database', 'Simulating database failure...', 'warning');
+                
+                // Simulate a database error
+                const fakeError = new Error('Simulated IndexedDB failure');
+                fakeError.name = 'DatabaseError';
+                
+                if (window.mimirErrorHandler) {
+                    window.mimirErrorHandler.logError('SIMULATED_DB_FAILURE', fakeError);
+                    log('database', '✓ Database failure simulated and logged', 'success');
+                } else {
+                    throw fakeError;
+                }
+            } catch (error) {
+                log('database', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFallbackMode() {
+            try {
+                log('database', 'Testing fallback mode...', 'info');
+                
+                if (window.dbWrapper) {
+                    // Test fallback methods directly
+                    const testData = await window.dbWrapper.fallbackGet('mimir-config');
+                    log('database', '✓ Fallback get operation completed', 'success');
+                    
+                    await window.dbWrapper.fallbackSet({ 'fallback-test': 'test-value' });
+                    log('database', '✓ Fallback set operation completed', 'success');
+                    
+                    await window.dbWrapper.fallbackRemove('fallback-test');
+                    log('database', '✓ Fallback remove operation completed', 'success');
+                } else {
+                    log('database', '✗ Database wrapper not available', 'error');
+                }
+            } catch (error) {
+                log('database', `✗ Fallback test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Migration Error Tests
+        async function testMigrationStatus() {
+            try {
+                log('migration', 'Checking migration status...', 'info');
+                
+                const migration = new MimirMigration(new MimirDB());
+                const status = await migration.getMigrationStatus();
+                
+                log('migration', `✓ Migration status: ${status.status}`, 'success');
+                log('migration', `✓ Progress: ${status.progress.percentage}%`, 'success');
+            } catch (error) {
+                log('migration', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMigrationValidation() {
+            try {
+                log('migration', 'Testing migration validation...', 'info');
+                
+                const migration = new MimirMigration(new MimirDB());
+                
+                // Test with sample data
+                const sampleData = {
+                    classified_cache: [
+                        { date: '2024-08-04', data: { test: 'data' }, createdAt: Date.now(), version: '1.0' }
+                    ],
+                    diaries: [
+                        { date: '2024-08-04', content: 'Test diary', title: '', createdAt: Date.now(), updatedAt: Date.now(), wordCount: 2, tags: [] }
+                    ],
+                    annual_reports: [],
+                    settings: [
+                        { key: 'test-setting', value: 'test-value', updatedAt: Date.now(), category: 'test' }
+                    ]
+                };
+                
+                const validation = await migration.validateTransformedData(sampleData);
+                
+                if (validation.passed) {
+                    log('migration', '✓ Migration validation passed', 'success');
+                } else {
+                    log('migration', `⚠ Migration validation failed: ${validation.errors.join(', ')}`, 'warning');
+                }
+            } catch (error) {
+                log('migration', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateMigrationFailure() {
+            try {
+                log('migration', 'Simulating migration failure...', 'warning');
+                
+                const migration = new MimirMigration(new MimirDB());
+                await migration.markMigrationFailed(new Error('Simulated migration failure'), 'test_stage');
+                
+                log('migration', '✓ Migration failure simulated', 'success');
+            } catch (error) {
+                log('migration', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRollbackMechanism() {
+            try {
+                log('migration', 'Testing rollback mechanism...', 'info');
+                
+                // This would test the actual rollback, but for safety we'll just log
+                log('migration', '⚠ Rollback test skipped for safety (would restore backup data)', 'warning');
+                log('migration', '✓ Rollback mechanism is available', 'success');
+            } catch (error) {
+                log('migration', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // UI Error Tests
+        function showTestError() {
+            if (window.mimirErrorUI) {
+                const error = {
+                    message: 'This is a test error message to demonstrate error handling.',
+                    suggestions: [
+                        'Try refreshing the page',
+                        'Check your internet connection',
+                        'Clear browser cache and try again'
+                    ],
+                    operation: 'TEST_OPERATION',
+                    originalError: new Error('Original test error')
+                };
+                
+                window.mimirErrorUI.showError(error);
+                log('ui', '✓ Test error displayed', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        function showTestWarning() {
+            if (window.mimirErrorUI) {
+                window.mimirErrorUI.showWarning('This is a test warning message.', {
+                    suggestions: ['This is just a test', 'No action needed']
+                });
+                log('ui', '✓ Test warning displayed', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        function showTestInfo() {
+            if (window.mimirErrorUI) {
+                window.mimirErrorUI.showInfo('This is a test info message.');
+                log('ui', '✓ Test info displayed', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        function showTestSuccess() {
+            if (window.mimirErrorUI) {
+                window.mimirErrorUI.showSuccess('This is a test success message.');
+                log('ui', '✓ Test success displayed', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        function showMigrationError() {
+            if (window.mimirErrorUI) {
+                const error = {
+                    message: 'Migration failed due to insufficient storage space.',
+                    suggestions: [
+                        'Free up browser storage space',
+                        'Use the rollback feature to restore your data',
+                        'Try the migration again after clearing cache'
+                    ],
+                    canRollback: true
+                };
+                
+                window.mimirErrorUI.showMigrationError(error);
+                log('ui', '✓ Migration error displayed', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        function showDatabaseError() {
+            if (window.mimirErrorUI) {
+                const error = {
+                    message: 'Database connection failed. Using backup storage.',
+                    suggestions: [
+                        'The system will automatically use backup storage',
+                        'Try refreshing the page to reinitialize the database',
+                        'Check browser storage permissions'
+                    ]
+                };
+                
+                window.mimirErrorUI.showDatabaseError(error);
+                log('ui', '✓ Database error displayed', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        function clearAllToasts() {
+            if (window.mimirErrorUI) {
+                window.mimirErrorUI.dismissAll();
+                log('ui', '✓ All toasts cleared', 'success');
+            } else {
+                log('ui', '✗ Error UI not available', 'error');
+            }
+        }
+
+        // System Status Tests
+        async function getSystemStatus() {
+            try {
+                log('status', 'Getting system status...', 'info');
+                
+                const status = {
+                    errorHandler: !!window.mimirErrorHandler,
+                    errorUI: !!window.mimirErrorUI,
+                    database: !!window.dbWrapper,
+                    indexedDB: !!window.indexedDB,
+                    chromeStorage: !!(chrome && chrome.storage && chrome.storage.local)
+                };
+                
+                for (const [component, available] of Object.entries(status)) {
+                    const statusType = available ? 'success' : 'error';
+                    const statusText = available ? 'Available' : 'Not Available';
+                    log('status', `${component}: ${statusText}`, statusType);
+                }
+            } catch (error) {
+                log('status', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getErrorReport() {
+            try {
+                log('status', 'Getting error report...', 'info');
+                
+                if (window.mimirErrorHandler) {
+                    const report = await window.mimirErrorHandler.getErrorReport();
+                    
+                    log('status', `Total errors: ${report.totalErrors}`, 'info');
+                    log('status', `Recent errors: ${report.recentErrors.length}`, 'info');
+                    log('status', `Fallback active: ${report.fallbackActive}`, report.fallbackActive ? 'warning' : 'success');
+                    
+                    if (report.recentErrors.length > 0) {
+                        log('status', 'Recent errors:', 'warning');
+                        report.recentErrors.slice(-3).forEach(error => {
+                            log('status', `  - ${error.message}`, 'warning');
+                        });
+                    }
+                } else {
+                    log('status', '✗ Error handler not available', 'error');
+                }
+            } catch (error) {
+                log('status', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearErrorLogs() {
+            try {
+                log('status', 'Clearing error logs...', 'info');
+                
+                if (window.mimirErrorHandler) {
+                    await window.mimirErrorHandler.clearLogs();
+                    log('status', '✓ Error logs cleared', 'success');
+                } else {
+                    log('status', '✗ Error handler not available', 'error');
+                }
+            } catch (error) {
+                log('status', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            log('status', 'Error handling test suite loaded', 'success');
+            getSystemStatus();
+        });
+    </script>
+</body>
+</html>

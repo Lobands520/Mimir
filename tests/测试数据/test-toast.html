@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast测试</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <style>
+        body {
+            background-color: var(--bg-body);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .test-container {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Toast样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: var(--border-radius-md);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 10000;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h2>Toast 效果测试</h2>
+        <p>点击按钮测试不同类型的提示效果</p>
+        
+        <div class="test-buttons">
+            <button class="btn btn-primary" onclick="showToast('设置已保存', 'success')">成功提示</button>
+            <button class="btn btn-secondary" onclick="showToast('保存设置失败', 'error')">错误提示</button>
+            <button class="btn btn-secondary" onclick="showToast('已填入域名，请选择分类后添加', 'info')">信息提示</button>
+            <button class="btn btn-secondary" onclick="showToast('这是一个很长的提示消息，用来测试换行效果和最大宽度限制', 'success')">长消息测试</button>
+        </div>
+    </div>
+
+    <script>
+        function showToast(message, type = 'success') {
+            // 移除现有的toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // 触发动画
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+            
+            // 3秒后开始退出动画
+            setTimeout(() => {
+                toast.classList.remove('show');
+                // 动画完成后移除元素
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

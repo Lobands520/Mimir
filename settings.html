@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimir - 设置</title>
+    <link rel="icon" type="image/x-icon" href="icon/icon-32x32.ico">
+    <!-- 关键：链接到统一的 dashboard.css -->
+    <link rel="stylesheet" href="dashboard.css">
+    <style>
+        /* settings.html 专属样式 */
+        body {
+            /* 使用仪表盘的深色背景，营造弹窗感 */
+            background-color: var(--bg-body);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* 设置卡片容器，使其居中并有最大宽度 */
+        .settings-modal-container {
+            width: 100%;
+            max-width: 720px;
+        }
+        
+        .card .section-header {
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card .section-header h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .card .section-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            font-size: 14px;
+            background-color: #f9fafb; /* gray-50 */
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background-color: var(--bg-card);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .checkbox-group > div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+        }
+        .checkbox-group .form-description {
+            margin-left: 24px;
+        }
+
+        /* 规则列表样式 */
+        .rules-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .rule-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--color-secondary);
+            border-radius: var(--border-radius-md);
+        }
+        .rule-info {
+            flex-grow: 1;
+            font-size: 14px;
+        }
+        .rule-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+        }
+        .rule-arrow { color: var(--text-secondary); }
+        .rule-category { color: var(--color-primary); font-weight: 500; }
+
+        /* 智能建议样式 (新功能) */
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .suggestion-tag {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px dashed #bfdbfe;
+            transition: all 0.2s ease;
+        }
+        .suggestion-tag:hover {
+            background-color: #dbeafe;
+            border-style: solid;
+            transform: translateY(-1px);
+        }
+
+        .add-rule-inline-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* 改进的Toast样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: var(--border-radius-md);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 10000;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Storage status styles */
+        .storage-status {
+            background: var(--color-secondary);
+            border-radius: var(--border-radius-md);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .status-value {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .status-value.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-value.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-value.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-value.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-modal-container">
+        <div class="card">
+            <div class="header">
+                <h1 class="app-title" style="justify-content: center;">
+                    <span class="logo">⚙️</span>
+                    Mimir 设置
+                </h1>
+            </div>
+
+            <!-- AI 配置 -->
+            <div class="section-header">
+                <h4>🤖 AI 配置</h4>
+                <p>配置用于数据分析和日记生成的 AI 模型</p>
+            </div>
+            <div class="form-group">
+                <label for="apiKey">OpenAI API Key</label>
+                <input type="password" id="apiKey" class="form-control" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+                <label for="apiUrl">API 地址</label>
+                <input type="text" id="apiUrl" class="form-control" placeholder="https://api.openai.com/v1/chat/completions">
+            </div>
+            <div class="form-group">
+                <label for="model">分析模型</label>
+                <input type="text" id="model" class="form-control" placeholder="gpt-3.5-turbo">
+                <div class="form-description">用于数据分析和分类的模型，建议使用较快的模型如 gpt-3.5-turbo</div>
+            </div>
+            <div class="form-group">
+                <label for="diaryModel">日记生成模型</label>
+                <input type="text" id="diaryModel" class="form-control" placeholder="gpt-4">
+                <div class="form-description">用于生成日记的模型，建议使用更强的模型如 gpt-4 以获得更好的写作质量</div>
+            </div>
+
+            <!-- 自定义分类规则 -->
+            <div class="section-header">
+                <h4>🎯 自定义分类规则</h4>
+                <p>为网站或关键词添加规则，提高分类准确率。</p>
+            </div>
+            
+            <!-- 智能建议 (新功能) -->
+            <div class="form-group">
+                <label>智能建议 (点击下方标签快速添加)</label>
+                <div class="suggestions" id="ruleSuggestions">
+                    <div class="placeholder" style="width: 100%; padding: 10px; font-size: 13px;">正在分析常用网站...</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="newRuleValue">添加新规则</label>
+                <div class="add-rule-inline-form">
+                    <input type="text" id="newRuleValue" class="form-control" placeholder="域名或关键词">
+                    <select id="newRuleType" class="form-control">
+                        <option value="domain">域名</option>
+                        <option value="keyword">关键词</option>
+                    </select>
+                    <select id="newRuleCategory" class="form-control">
+                        <option value="编程与开发">编程与开发</option>
+                        <option value="工作与生产力">工作与生产力</option>
+                        <option value="新闻与资讯">新闻与资讯</option>
+                        <option value="娱乐与视频">娱乐与视频</option>
+                        <option value="社交与社区">社交与社区</option>
+                        <option value="生活与消费">生活与消费</option>
+                        <option value="学术与教育">学术与教育</option>
+                        <option value="NSFW">NSFW</option>
+                    </select>
+                    <button type="button" id="addRuleBtn" class="btn btn-secondary">添加</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>现有规则</label>
+                <div class="rules-list" id="rulesContainer">
+                    <div class="placeholder" style="padding: 20px;">暂无自定义规则</div>
+                </div>
+            </div>
+
+            <!-- 日记生成设置 -->
+            <div class="section-header">
+                <h4>📝 日记生成设置</h4>
+                <p>自定义日记生成的风格和要求</p>
+            </div>
+            <div class="form-group">
+                <label for="customPrompt">自定义日记提示词</label>
+                <textarea id="customPrompt" class="form-control" placeholder="留空使用默认的认知模式分析提示词"></textarea>
+                <div class="form-description">留空则使用默认的"认知模式快报"提示词，这是一个专业的行为模式分析引擎。自定义提示词会与浏览数据结合，生成个性化的日记风格。</div>
+            </div>
+            <div class="form-group checkbox-group">
+                <div>
+                    <input type="checkbox" id="enableDiaryComparison" style="width: auto;">
+                    <label for="enableDiaryComparison">启用日记对比（与前一天的日记进行对比分析）</label>
+                </div>
+                <div class="form-description">开启后，生成日记时会自动对比前一天的日记内容，分析行为模式的变化和进化。</div>
+            </div>
+            <div class="form-group checkbox-group">
+                <div>
+                    <input type="checkbox" id="enableStreaming" style="width: auto;" checked>
+                    <label for="enableStreaming">启用流式传输（实时显示日记生成过程）</label>
+                </div>
+            </div>
+
+            <!-- 数据迁移设置 -->
+            <div class="section-header">
+                <h4>🗄️ 数据存储与迁移</h4>
+                <p>管理数据存储方式和迁移状态</p>
+            </div>
+            <div class="form-group">
+                <label>存储状态</label>
+                <div id="storageStatus" class="storage-status">
+                    <div class="status-item">
+                        <span class="status-label">IndexedDB:</span>
+                        <span id="indexeddbStatus" class="status-value">检查中...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">迁移状态:</span>
+                        <span id="migrationStatus" class="status-value">检查中...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">历史备份:</span>
+                        <span id="backupStatus" class="status-value">检查中...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">备份记录数:</span>
+                        <span id="backupCount" class="status-value">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">浏览器记录数:</span>
+                        <span id="browserHistoryCount" class="status-value">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">备份覆盖率:</span>
+                        <span id="backupCoverage" class="status-value">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">最后备份:</span>
+                        <span id="lastBackup" class="status-value">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="button" id="migrationBtn" class="btn btn-primary" style="display: none;">
+                    🚀 开始数据迁移
+                </button>
+                <button type="button" id="checkStorageBtn" class="btn btn-secondary">
+                    🔍 检查存储状态
+                </button>
+                <button type="button" id="backupHistoryBtn" class="btn btn-primary">
+                    💾 增量备份历史记录
+                </button>
+                <button type="button" id="fullBackupHistoryBtn" class="btn btn-secondary">
+                    🔄 完整备份所有历史记录
+                </button>
+                <div class="form-description">
+                    <strong>增量备份</strong>：只备份新增的历史记录（推荐日常使用）<br>
+                    <strong>完整备份</strong>：备份所有历史记录，包括之前未备份的记录（首次使用或数据不完整时使用）<br>
+                    系统会自动每小时进行增量备份，确保数据永久保存，不受浏览器历史记录限制。
+                </div>
+            </div>
+
+            <!-- 其他设置 -->
+            <div class="section-header">
+                <h4>🔧 其他设置</h4>
+            </div>
+            <div class="form-group checkbox-group">
+                <div>
+                    <input type="checkbox" id="useAIClassification" style="width: auto;">
+                    <label for="useAIClassification">当规则分类不明确时，使用AI进行增强分类</label>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="actions">
+                <button type="button" id="resetBtn" class="btn btn-secondary">重置默认</button>
+                <button type="button" id="saveBtn" class="btn btn-primary">保存设置</button>
+            </div>
+        </div>
+    </div>
+    <script src="lib/idb.js"></script>
+    <script src="lib/error-handler.js"></script>
+    <script src="lib/error-ui.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script src="lib/migration.js"></script>
+    <script src="settings.js"></script>
+</body>
+</html>

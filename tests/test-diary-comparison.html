@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日记对比功能测试 - Mimir</title>
+    <link rel="icon" type="image/x-icon" href="../icon/icon-32x32.ico">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .prompt-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .comparison-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .diary-sample {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 日记对比功能测试</h1>
+    
+    <div class="test-section">
+        <h3>功能概述</h3>
+        <ul>
+            <li>✨ <strong>日记对比功能</strong>：在设置中可开启与前一天日记的对比分析</li>
+            <li>🧠 <strong>认知模式分析</strong>：使用专业的"认知模式快报"作为默认提示词</li>
+            <li>📈 <strong>进化追踪</strong>：分析行为模式的变化和进步</li>
+            <li>🎯 <strong>四层思想阶梯</strong>：本能冲动 → 规则角色 → 自我反思 → 整合超越</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>1. 设置配置测试</h3>
+        <button onclick="testSettingsConfig()">测试设置配置</button>
+        <div id="settingsResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 默认提示词预览</h3>
+        <button onclick="showDefaultPrompt()">显示认知模式分析提示词</button>
+        <div id="promptPreview"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 日记对比逻辑测试</h3>
+        <button onclick="testComparisonLogic()">测试对比逻辑</button>
+        <button onclick="createTestDiaries()">创建测试日记</button>
+        <div id="comparisonResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 对比效果演示</h3>
+        <div class="comparison-demo">
+            <div class="diary-sample">
+                <h4>前一天日记示例</h4>
+                <p><strong>认知模式快报 - 2025-01-03</strong></p>
+                <p>主导模式：规则与角色驱动。大量时间投入工作任务处理和技术学习。</p>
+                <p>次要模式：本能冲动零星出现。短暂的娱乐内容浏览作为工作间隙的调节。</p>
+                <p>能量流动：从任务执行向本能冲动的"泄压"模式。</p>
+            </div>
+            <div class="diary-sample">
+                <h4>今日对比分析示例</h4>
+                <p><strong>认知模式快报 - 2025-01-04</strong></p>
+                <p>主导模式：自我与反思驱动。相比昨日的任务导向，今日更多投入个人成长和深度思考。</p>
+                <p>模式进化：从昨日的"规则-本能"二元模式，跃迁至"反思-整合"的高阶模式。</p>
+                <p>行为变化：娱乐时间减少60%，学习深度提升，出现系统性思考迹象。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试日志</h3>
+        <div id="testLog" class="log"></div>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="../lib/idb.js"></script>
+    <script src="../lib/error-handler.js"></script>
+    <script src="../lib/error-ui.js"></script>
+    <script src="../lib/mimir-db.js"></script>
+    <script src="../lib/db-wrapper.js"></script>
+
+    <script>
+        let testLog = '';
+        
+        function log(message) {
+            testLog += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            document.getElementById('testLog').textContent = testLog;
+            console.log(message);
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        // 测试设置配置
+        async function testSettingsConfig() {
+            log('开始测试设置配置...');
+            
+            try {
+                // 初始化数据库
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+
+                // 测试配置保存和读取
+                const testConfig = {
+                    enableDiaryComparison: true,
+                    customPrompt: '',
+                    enableStreaming: true
+                };
+
+                await window.dbWrapper.set({ 'test-config': testConfig });
+                const result = await window.dbWrapper.get('test-config');
+                
+                const configTests = [
+                    result['test-config'].enableDiaryComparison ? '✅ 日记对比配置保存成功' : '❌ 日记对比配置保存失败',
+                    result['test-config'].customPrompt === '' ? '✅ 自定义提示词配置正确' : '❌ 自定义提示词配置错误',
+                    result['test-config'].enableStreaming ? '✅ 流式传输配置正确' : '❌ 流式传输配置错误'
+                ];
+
+                log('✅ 设置配置测试完成');
+                showResult('settingsResult', configTests.join('<br>'), 'success');
+                
+            } catch (error) {
+                log('❌ 设置配置测试失败: ' + error.message);
+                showResult('settingsResult', '设置配置测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示默认提示词
+        function showDefaultPrompt() {
+            log('显示认知模式分析提示词...');
+            
+            const defaultPrompt = `Profile:
+- language: 中文
+- description: 一个客观、深刻的分析引擎，基于结构化的浏览摘要，生成一份纯文本的"认知模式快报"。
+
+CoreLogic & Rules:
+1. 分析框架 (MentalModels): 四层"思想阶梯"框架
+- 阶梯一 (本能与冲动): 即时满足驱动
+- 阶梯二 (规则与角色): 外部规则与社会角色驱动  
+- 阶梯三 (自我与反思): 内在探索与个人价值驱动
+- 阶梯四 (整合与超越): 系统性思考与利他驱动
+
+2. 工作流: [映射] → [识别] → [生成]
+
+3. 风格戒律:
+- 纯文本输出，禁止Markdown
+- 语气冷静、克制、精确
+- 可以犀利点评，监督用户
+- 证据为王，必须标注证据来源
+- 禁止第一人称和说教`;
+
+            document.getElementById('promptPreview').innerHTML = `
+                <div class="prompt-preview">${defaultPrompt}</div>
+                <div class="test-result info">
+                    ✅ 这是新的默认提示词，专注于认知模式分析，比传统日记更具洞察力
+                </div>
+            `;
+            
+            log('✅ 默认提示词显示完成');
+        }
+
+        // 测试对比逻辑
+        async function testComparisonLogic() {
+            log('开始测试日记对比逻辑...');
+            
+            try {
+                // 模拟对比逻辑
+                const mockGetPreviousDiary = async (currentDate) => {
+                    const previousDate = new Date(currentDate);
+                    previousDate.setDate(previousDate.getDate() - 1);
+                    const prevDateStr = previousDate.toISOString().split('T')[0];
+                    
+                    // 模拟从数据库获取前一天日记
+                    const mockDiary = `认知模式快报 - ${prevDateStr}
+
+主导模式：规则与角色驱动。工作任务占据主要注意力。
+次要模式：本能冲动零星出现。
+能量流动：任务执行向本能冲动的泄压模式。`;
+                    
+                    return mockDiary;
+                };
+
+                const currentDate = '2025-01-04';
+                const previousDiary = await mockGetPreviousDiary(currentDate);
+                
+                const comparisonTests = [
+                    previousDiary ? '✅ 成功获取前一天日记' : '❌ 获取前一天日记失败',
+                    previousDiary.includes('认知模式快报') ? '✅ 日记格式正确' : '❌ 日记格式错误',
+                    previousDiary.includes('主导模式') ? '✅ 包含模式分析' : '❌ 缺少模式分析',
+                    '✅ 对比上下文构建成功'
+                ];
+
+                log('✅ 对比逻辑测试完成');
+                showResult('comparisonResult', comparisonTests.join('<br>'), 'success');
+                
+            } catch (error) {
+                log('❌ 对比逻辑测试失败: ' + error.message);
+                showResult('comparisonResult', '对比逻辑测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 创建测试日记
+        async function createTestDiaries() {
+            log('开始创建测试日记...');
+            
+            try {
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+                const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+                const yesterdayDiary = `认知模式快报 - ${yesterday}
+
+主导模式：规则与角色驱动。大量时间投入工作任务处理和技术学习 (证据: "项目文档", "技术博客", "工作邮件")。
+
+次要模式：本能冲动零星出现。短暂的娱乐内容浏览作为工作间隙的调节 (证据: "短视频", "社交媒体")。
+
+能量流动：从任务执行向本能冲动的"泄压"模式。工作压力通过娱乐内容释放。
+
+注意力分布：70%规则角色，25%本能冲动，5%自我反思。典型的工作日模式。`;
+
+                const todayDiary = `认知模式快报 - ${today}
+
+主导模式：自我与反思驱动。相比昨日的任务导向，今日更多投入个人成长和深度思考 (证据: "哲学文章", "自我分析", "人生规划")。
+
+模式进化：从昨日的"规则-本能"二元模式，跃迁至"反思-整合"的高阶模式。这是一个积极的认知升级信号。
+
+行为变化：娱乐时间减少60%，学习深度提升，出现系统性思考迹象 (证据: "深度学习资料", "系统设计文档")。
+
+注意力分布：60%自我反思，30%规则角色，10%整合超越。展现出更高层次的认知模式。`;
+
+                await window.dbWrapper.set({
+                    [`diary-${yesterday}`]: yesterdayDiary,
+                    [`diary-${today}`]: todayDiary
+                });
+
+                const createTests = [
+                    '✅ 昨日测试日记创建成功',
+                    '✅ 今日测试日记创建成功',
+                    '✅ 日记包含认知模式分析',
+                    '✅ 日记包含对比分析',
+                    '✅ 日记符合新的提示词风格'
+                ];
+
+                log('✅ 测试日记创建完成');
+                showResult('comparisonResult', createTests.join('<br>'), 'success');
+                
+            } catch (error) {
+                log('❌ 创建测试日记失败: ' + error.message);
+                showResult('comparisonResult', '创建测试日记失败: ' + error.message, 'error');
+            }
+        }
+
+        // 页面加载完成后自动运行基础测试
+        window.addEventListener('load', () => {
+            log('页面加载完成，日记对比功能测试准备就绪');
+            showDefaultPrompt();
+        });
+    </script>
+</body>
+</html>

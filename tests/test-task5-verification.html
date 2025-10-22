@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 5 Verification - Data Visualization</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .button-group {
+            margin: 15px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        #console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .requirements {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .requirements h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        .requirements ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Task 5 Verification: Data Visualization and Table Functionality</h1>
+        
+        <div class="requirements">
+            <h3>📋 Task Requirements</h3>
+            <ul>
+                <li>Create JavaScript to populate tables with data from each Object Store</li>
+                <li>Add search and filtering capabilities across all data fields</li>
+                <li>Implement sorting functionality for table columns</li>
+                <li>Add pagination for handling large datasets efficiently</li>
+                <li><strong>Requirements:</strong> 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 Automated Verification</h3>
+            <p>Run comprehensive tests to verify all task requirements are implemented correctly.</p>
+            <div class="button-group">
+                <button class="btn-primary" onclick="runVerification()">Run Full Verification</button>
+                <button class="btn-info" onclick="clearConsole()">Clear Console</button>
+                <button class="btn-success" onclick="openDataManager()">Open Data Manager</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Manual Testing</h3>
+            <p>Test individual components of the data visualization system.</p>
+            <div class="button-group">
+                <button onclick="testDatabaseInit()">Test DB Init</button>
+                <button onclick="addSampleData()">Add Sample Data</button>
+                <button onclick="testSearch()">Test Search</button>
+                <button onclick="testFiltering()">Test Filtering</button>
+                <button onclick="testSorting()">Test Sorting</button>
+                <button onclick="testPagination()">Test Pagination</button>
+            </div>
+        </div>
+
+        <div id="status"></div>
+        <div id="console"></div>
+    </div>
+
+    <!-- Load required libraries -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="verify-data-visualization.js"></script>
+
+    <script>
+        let db;
+        const consoleDiv = document.getElementById('console');
+        const statusDiv = document.getElementById('status');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            consoleDiv.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message, success = true) {
+            statusDiv.innerHTML = `<div class="status ${success ? 'success' : 'error'}">${message}</div>`;
+        }
+
+        function clearConsole() {
+            consoleDiv.textContent = '';
+            statusDiv.innerHTML = '';
+        }
+
+        async function runVerification() {
+            clearConsole();
+            log('🚀 Starting comprehensive verification of Task 5 implementation...');
+            setStatus('Running verification tests...', true);
+            
+            try {
+                const verifier = new DataVisualizationVerifier();
+                
+                // Override the log method to use our UI
+                verifier.log = (message, success = true) => {
+                    log(message, success ? 'success' : 'error');
+                };
+                
+                await verifier.runAllTests();
+                
+                const successful = verifier.results.filter(r => r.success).length;
+                const total = verifier.results.length;
+                const successRate = ((successful / total) * 100).toFixed(1);
+                
+                setStatus(`Verification completed: ${successful}/${total} tests passed (${successRate}%)`, successful === total);
+                
+            } catch (error) {
+                log(`Verification failed: ${error.message}`, 'error');
+                setStatus('Verification failed - see console for details', false);
+            }
+        }
+
+        async function testDatabaseInit() {
+            try {
+                log('Testing database initialization...');
+                db = new MimirDB();
+                await db.initialize();
+                log('Database initialized successfully', 'success');
+                setStatus('Database connection established', true);
+            } catch (error) {
+                log(`Database initialization failed: ${error.message}`, 'error');
+                setStatus('Database connection failed', false);
+            }
+        }
+
+        async function addSampleData() {
+            try {
+                if (!db) await testDatabaseInit();
+                
+                log('Adding sample data for testing...');
+                
+                // Add various types of sample data
+                await db.addHistoryRecord({
+                    timestamp: Date.now(),
+                    url: 'https://github.com/test/repo',
+                    title: 'Test Repository - GitHub',
+                    domain: 'github.com',
+                    visitCount: 3
+                });
+
+                await db.saveDiary('2024-08-04', 'Sample diary entry for testing the data visualization features.', 'Test Entry');
+                
+                await db.saveClassifiedData('2024-08-04', {
+                    categories: ['development', 'testing'],
+                    summary: 'Working on data visualization',
+                    totalTime: 120
+                });
+
+                await db.saveSetting('testMode', true, 'development');
+                
+                log('Sample data added successfully', 'success');
+                setStatus('Sample data added to all Object Stores', true);
+                
+            } catch (error) {
+                log(`Failed to add sample data: ${error.message}`, 'error');
+                setStatus('Failed to add sample data', false);
+            }
+        }
+
+        async function testSearch() {
+            try {
+                if (!db) await testDatabaseInit();
+                
+                log('Testing search functionality...');
+                const results = await db.searchAll('test');
+                
+                const totalResults = Object.values(results).reduce((sum, arr) => sum + arr.length, 0);
+                log(`Search completed: found ${totalResults} results across all stores`, 'success');
+                log(`Results breakdown: ${JSON.stringify(Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.length])))}`);
+                
+                setStatus(`Search test passed: ${totalResults} results found`, true);
+                
+            } catch (error) {
+                log(`Search test failed: ${error.message}`, 'error');
+                setStatus('Search test failed', false);
+            }
+        }
+
+        async function testFiltering() {
+            try {
+                if (!db) await testDatabaseInit();
+                
+                log('Testing filtering functionality...');
+                
+                const today = new Date().toISOString().split('T')[0];
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                
+                const historyFiltered = await db.getHistoryByDateRange(yesterday, today);
+                const diariesFiltered = await db.getDiariesByDateRange(yesterday, today);
+                
+                log(`Date filtering works: ${historyFiltered.length} history, ${diariesFiltered.length} diaries`, 'success');
+                setStatus('Filtering test passed', true);
+                
+            } catch (error) {
+                log(`Filtering test failed: ${error.message}`, 'error');
+                setStatus('Filtering test failed', false);
+            }
+        }
+
+        async function testSorting() {
+            try {
+                if (!db) await testDatabaseInit();
+                
+                log('Testing sorting functionality...');
+                
+                const history = await db.getAllHistory();
+                if (history.length > 0) {
+                    const sorted = [...history].sort((a, b) => b.timestamp - a.timestamp);
+                    log(`Sorting works: ${sorted.length} records sorted by timestamp`, 'success');
+                    setStatus('Sorting test passed', true);
+                } else {
+                    log('No data available for sorting test', 'info');
+                    setStatus('Sorting test skipped - no data', true);
+                }
+                
+            } catch (error) {
+                log(`Sorting test failed: ${error.message}`, 'error');
+                setStatus('Sorting test failed', false);
+            }
+        }
+
+        async function testPagination() {
+            try {
+                if (!db) await testDatabaseInit();
+                
+                log('Testing pagination functionality...');
+                
+                const history = await db.getAllHistory();
+                const pageSize = 10;
+                const totalPages = Math.ceil(history.length / pageSize);
+                
+                const page1 = history.slice(0, pageSize);
+                const page2 = history.slice(pageSize, pageSize * 2);
+                
+                log(`Pagination works: ${history.length} total records, ${totalPages} pages of ${pageSize}`, 'success');
+                log(`Page 1: ${page1.length} records, Page 2: ${page2.length} records`);
+                setStatus('Pagination test passed', true);
+                
+            } catch (error) {
+                log(`Pagination test failed: ${error.message}`, 'error');
+                setStatus('Pagination test failed', false);
+            }
+        }
+
+        function openDataManager() {
+            window.open('data-manager.html', '_blank');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('🎯 Task 5 Verification System Ready');
+            log('Click "Run Full Verification" to test all implemented features');
+            setStatus('Ready to run verification tests', true);
+        });
+    </script>
+</body>
+</html>

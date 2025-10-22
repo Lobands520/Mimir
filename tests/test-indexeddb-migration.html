@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Migration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #005a87;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { border-color: #28a745; background-color: #d4edda; }
+        .error { border-color: #dc3545; background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>🧪 IndexedDB Migration Test</h1>
+    <p>This page tests the IndexedDB migration functionality to ensure the database wrapper works correctly.</p>
+
+    <div class="test-section">
+        <h2>1. Database Initialization Test</h2>
+        <button class="test-button" onclick="testDatabaseInit()">Test Database Initialization</button>
+        <div id="init-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Settings Storage Test</h2>
+        <button class="test-button" onclick="testSettingsStorage()">Test Settings Storage</button>
+        <div id="settings-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Classified Data Test</h2>
+        <button class="test-button" onclick="testClassifiedData()">Test Classified Data</button>
+        <div id="classified-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Diary Data Test</h2>
+        <button class="test-button" onclick="testDiaryData()">Test Diary Data</button>
+        <div id="diary-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Annual Report Test</h2>
+        <button class="test-button" onclick="testAnnualReport()">Test Annual Report</button>
+        <div id="annual-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Chrome Storage Compatibility Test</h2>
+        <button class="test-button" onclick="testChromeStorageCompatibility()">Test Chrome Storage Compatibility</button>
+        <div id="compatibility-result" class="result"></div>
+    </div>
+
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script>
+        async function testDatabaseInit() {
+            const resultDiv = document.getElementById('init-result');
+            try {
+                resultDiv.textContent = 'Testing database initialization...';
+                
+                // Test database wrapper initialization
+                await window.dbWrapper.initialize();
+                
+                const isAvailable = await window.dbWrapper.isIndexedDBAvailable();
+                
+                if (isAvailable) {
+                    resultDiv.textContent = '✅ Database initialization successful!\nIndexedDB is available and working.';
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = '❌ Database initialization failed!\nIndexedDB is not available.';
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Database initialization failed!\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testSettingsStorage() {
+            const resultDiv = document.getElementById('settings-result');
+            try {
+                resultDiv.textContent = 'Testing settings storage...';
+                
+                // Test data
+                const testConfig = {
+                    apiKey: 'test-api-key-12345',
+                    apiUrl: 'https://api.test.com/v1/chat/completions',
+                    model: 'gpt-3.5-turbo',
+                    useAIClassification: true,
+                    customRules: [
+                        { type: 'domain', value: 'test.com', category: '测试' }
+                    ]
+                };
+
+                // Test set operation
+                await window.dbWrapper.set({ 'mimir-config': testConfig });
+                
+                // Test get operation
+                const result = await window.dbWrapper.get('mimir-config');
+                
+                if (result['mimir-config'] && result['mimir-config'].apiKey === testConfig.apiKey) {
+                    resultDiv.textContent = `✅ Settings storage test passed!
+Stored config: ${JSON.stringify(result['mimir-config'], null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Settings storage test failed!
+Expected: ${JSON.stringify(testConfig, null, 2)}
+Got: ${JSON.stringify(result, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Settings storage test failed!\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testClassifiedData() {
+            const resultDiv = document.getElementById('classified-result');
+            try {
+                resultDiv.textContent = 'Testing classified data storage...';
+                
+                const testDate = '2024-08-04';
+                const testData = {
+                    date: testDate,
+                    totalItems: 25,
+                    categories: [
+                        {
+                            name: '编程与开发',
+                            count: 10,
+                            domains: ['github.com', 'stackoverflow.com'],
+                            keyTitles: ['GitHub Repository', 'Stack Overflow Question']
+                        }
+                    ],
+                    peakHours: ['14:00-15:59', '20:00-21:59'],
+                    topDomains: [
+                        { domain: 'github.com', count: 8 },
+                        { domain: 'stackoverflow.com', count: 2 }
+                    ]
+                };
+
+                // Test set operation
+                await window.dbWrapper.set({ [`classified-${testDate}`]: testData });
+                
+                // Test get operation
+                const result = await window.dbWrapper.get(`classified-${testDate}`);
+                
+                if (result[`classified-${testDate}`] && result[`classified-${testDate}`].totalItems === testData.totalItems) {
+                    resultDiv.textContent = `✅ Classified data test passed!
+Stored data: ${JSON.stringify(result[`classified-${testDate}`], null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Classified data test failed!
+Expected: ${JSON.stringify(testData, null, 2)}
+Got: ${JSON.stringify(result, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Classified data test failed!\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testDiaryData() {
+            const resultDiv = document.getElementById('diary-result');
+            try {
+                resultDiv.textContent = 'Testing diary data storage...';
+                
+                const testDate = '2024-08-04';
+                const testDiary = `# 今日反思日记 - ${testDate}
+
+今天是充实的一天！主要专注于编程学习和开发工作。
+
+## 🔍 浏览分析
+- 主要访问了GitHub和Stack Overflow
+- 解决了几个技术问题
+- 学习了新的编程概念
+
+## 💭 个人反思
+今天的学习效率很高，特别是在解决技术问题方面有了新的突破。
+
+## 📝 明日计划
+- 继续深入学习相关技术
+- 完善当前项目
+- 整理学习笔记`;
+
+                // Test set operation
+                await window.dbWrapper.set({ [`diary-${testDate}`]: testDiary });
+                
+                // Test get operation
+                const result = await window.dbWrapper.get(`diary-${testDate}`);
+                
+                if (result[`diary-${testDate}`] && result[`diary-${testDate}`].includes('今日反思日记')) {
+                    resultDiv.textContent = `✅ Diary data test passed!
+Stored diary: ${result[`diary-${testDate}`]}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Diary data test failed!
+Expected: ${testDiary}
+Got: ${JSON.stringify(result, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Diary data test failed!\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testAnnualReport() {
+            const resultDiv = document.getElementById('annual-result');
+            try {
+                resultDiv.textContent = 'Testing annual report storage...';
+                
+                const testYear = '2024';
+                const testReport = {
+                    year: 2024,
+                    summary: {
+                        totalDays: 365,
+                        activeDays: 200,
+                        totalPages: 5000,
+                        topCategories: ['编程与开发', '工作与生产力', '新闻与资讯']
+                    },
+                    monthlyData: {
+                        '2024-01': { pages: 400, domains: 50 },
+                        '2024-02': { pages: 380, domains: 45 }
+                    },
+                    insights: [
+                        '编程学习时间显著增加',
+                        '工作效率有所提升',
+                        '信息获取更加多元化'
+                    ]
+                };
+
+                // Test set operation
+                await window.dbWrapper.set({ [`annual-report-${testYear}`]: testReport });
+                
+                // Test get operation
+                const result = await window.dbWrapper.get(`annual-report-${testYear}`);
+                
+                if (result[`annual-report-${testYear}`] && result[`annual-report-${testYear}`].year === testReport.year) {
+                    resultDiv.textContent = `✅ Annual report test passed!
+Stored report: ${JSON.stringify(result[`annual-report-${testYear}`], null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Annual report test failed!
+Expected: ${JSON.stringify(testReport, null, 2)}
+Got: ${JSON.stringify(result, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Annual report test failed!\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testChromeStorageCompatibility() {
+            const resultDiv = document.getElementById('compatibility-result');
+            try {
+                resultDiv.textContent = 'Testing chrome.storage.local compatibility...';
+                
+                // Test multiple operations like the original code would do
+                const testData = {
+                    'mimir-config': {
+                        apiKey: 'compatibility-test-key',
+                        model: 'gpt-4'
+                    },
+                    'classified-2024-08-04': {
+                        date: '2024-08-04',
+                        totalItems: 15
+                    },
+                    'diary-2024-08-04': 'Test diary content for compatibility',
+                    'annual-report-2024': {
+                        year: 2024,
+                        summary: { totalDays: 365 }
+                    }
+                };
+
+                // Test batch set operation
+                await window.dbWrapper.set(testData);
+                
+                // Test individual get operations (like the original code)
+                const configResult = await window.dbWrapper.get('mimir-config');
+                const classifiedResult = await window.dbWrapper.get('classified-2024-08-04');
+                const diaryResult = await window.dbWrapper.get('diary-2024-08-04');
+                const reportResult = await window.dbWrapper.get('annual-report-2024');
+                
+                // Test get all operation
+                const allResult = await window.dbWrapper.get(null);
+                
+                let success = true;
+                let details = [];
+                
+                if (!configResult['mimir-config'] || configResult['mimir-config'].apiKey !== testData['mimir-config'].apiKey) {
+                    success = false;
+                    details.push('❌ Config retrieval failed');
+                } else {
+                    details.push('✅ Config retrieval passed');
+                }
+                
+                if (!classifiedResult['classified-2024-08-04'] || classifiedResult['classified-2024-08-04'].totalItems !== testData['classified-2024-08-04'].totalItems) {
+                    success = false;
+                    details.push('❌ Classified data retrieval failed');
+                } else {
+                    details.push('✅ Classified data retrieval passed');
+                }
+                
+                if (!diaryResult['diary-2024-08-04'] || diaryResult['diary-2024-08-04'] !== testData['diary-2024-08-04']) {
+                    success = false;
+                    details.push('❌ Diary retrieval failed');
+                } else {
+                    details.push('✅ Diary retrieval passed');
+                }
+                
+                if (!reportResult['annual-report-2024'] || reportResult['annual-report-2024'].year !== testData['annual-report-2024'].year) {
+                    success = false;
+                    details.push('❌ Annual report retrieval failed');
+                } else {
+                    details.push('✅ Annual report retrieval passed');
+                }
+                
+                if (!allResult || Object.keys(allResult).length < 4) {
+                    success = false;
+                    details.push('❌ Get all operation failed');
+                } else {
+                    details.push('✅ Get all operation passed');
+                }
+                
+                if (success) {
+                    resultDiv.textContent = `✅ Chrome storage compatibility test passed!
+
+${details.join('\n')}
+
+Total items in storage: ${Object.keys(allResult).length}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Chrome storage compatibility test failed!
+
+${details.join('\n')}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Chrome storage compatibility test failed!\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        // Auto-run database initialization test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testDatabaseInit, 1000);
+        });
+    </script>
+</body>
+</html>

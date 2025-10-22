@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Migration System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007cba;
+            transition: width 0.3s ease;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .status-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007cba;
+        }
+        .status-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .status-card .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007cba;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Migration System Test</h1>
+        <p>Test the complete migration system from chrome.storage to IndexedDB</p>
+        
+        <div class="test-section">
+            <h3>Migration Status</h3>
+            <div id="migration-status" class="status-grid">
+                <div class="status-card">
+                    <h4>Status</h4>
+                    <div id="status-value" class="value">Loading...</div>
+                </div>
+                <div class="status-card">
+                    <h4>Progress</h4>
+                    <div id="progress-value" class="value">0%</div>
+                </div>
+                <div class="status-card">
+                    <h4>Stage</h4>
+                    <div id="stage-value" class="value">-</div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <button onclick="checkMigrationStatus()">Check Status</button>
+            <button onclick="refreshStatus()" id="refresh-btn">Auto Refresh</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Data Setup</h3>
+            <p>Create sample chrome.storage data for testing migration</p>
+            <button onclick="createTestData()">Create Test Data</button>
+            <button onclick="clearChromeStorage()">Clear Chrome Storage</button>
+            <button onclick="viewChromeStorage()">View Chrome Storage</button>
+            <div id="test-data-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Migration Operations</h3>
+            <button onclick="performFullMigration()">Start Full Migration</button>
+            <button onclick="rollbackMigration()">Rollback Migration</button>
+            <button onclick="cleanupArtifacts()">Cleanup Artifacts</button>
+            <div id="migration-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Data Validation</h3>
+            <button onclick="validateData()">Validate Migrated Data</button>
+            <button onclick="compareData()">Compare Chrome vs IndexedDB</button>
+            <div id="validation-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Activity Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <!-- Load required libraries -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/migration.js"></script>
+
+    <script>
+        let mimirDB;
+        let migration;
+        let refreshInterval;
+
+        // Initialize
+        async function init() {
+            try {
+                mimirDB = new MimirDB();
+                await mimirDB.initialize();
+                migration = new MimirMigration(mimirDB);
+                
+                log('System initialized successfully', 'success');
+                await checkMigrationStatus();
+            } catch (error) {
+                log(`Initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Logging utility
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Status checking
+        async function checkMigrationStatus() {
+            try {
+                const status = await migration.getMigrationStatus();
+                
+                document.getElementById('status-value').textContent = status.status;
+                document.getElementById('progress-value').textContent = `${status.progress.percentage}%`;
+                document.getElementById('stage-value').textContent = status.progress.stage;
+                document.getElementById('progress-fill').style.width = `${status.progress.percentage}%`;
+                
+                log(`Status: ${status.status}, Progress: ${status.progress.percentage}%, Stage: ${status.progress.stage}`);
+                
+                if (status.progress.details) {
+                    log(`Details: ${status.progress.details}`);
+                }
+            } catch (error) {
+                log(`Failed to check status: ${error.message}`, 'error');
+            }
+        }
+
+        function refreshStatus() {
+            const btn = document.getElementById('refresh-btn');
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+                btn.textContent = 'Auto Refresh';
+                log('Auto refresh stopped');
+            } else {
+                refreshInterval = setInterval(checkMigrationStatus, 2000);
+                btn.textContent = 'Stop Refresh';
+                log('Auto refresh started (2s interval)');
+            }
+        }
+
+        // Test data creation
+        async function createTestData() {
+            try {
+                const testData = {
+                    'mimir-config': {
+                        apiKey: 'test-api-key',
+                        theme: 'dark',
+                        autoSync: true
+                    },
+                    'classified-2024-08-01': {
+                        categories: ['work', 'research'],
+                        totalVisits: 45,
+                        topDomains: ['github.com', 'stackoverflow.com']
+                    },
+                    'classified-2024-08-02': {
+                        categories: ['entertainment', 'news'],
+                        totalVisits: 32,
+                        topDomains: ['youtube.com', 'reddit.com']
+                    },
+                    'diary-2024-08-01': 'Today I worked on the migration system. Made good progress on the data transformation logic.',
+                    'diary-2024-08-02': 'Continued testing the migration functionality. Everything looks good so far.',
+                    'annual-report-2024': {
+                        summary: { totalDays: 365, totalVisits: 12450 },
+                        topCategories: ['work', 'research', 'entertainment'],
+                        insights: 'High productivity year with focus on development work'
+                    },
+                    'custom-setting-1': 'custom-value-1',
+                    'custom-setting-2': { nested: 'object', value: 42 }
+                };
+
+                await chrome.storage.local.set(testData);
+                
+                const result = document.getElementById('test-data-result');
+                result.innerHTML = `<div class="success">Created ${Object.keys(testData).length} test items in chrome.storage</div>`;
+                log(`Created ${Object.keys(testData).length} test items`, 'success');
+            } catch (error) {
+                const result = document.getElementById('test-data-result');
+                result.innerHTML = `<div class="error">Failed to create test data: ${error.message}</div>`;
+                log(`Failed to create test data: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearChromeStorage() {
+            try {
+                await chrome.storage.local.clear();
+                const result = document.getElementById('test-data-result');
+                result.innerHTML = `<div class="success">Chrome storage cleared</div>`;
+                log('Chrome storage cleared', 'success');
+            } catch (error) {
+                const result = document.getElementById('test-data-result');
+                result.innerHTML = `<div class="error">Failed to clear storage: ${error.message}</div>`;
+                log(`Failed to clear storage: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewChromeStorage() {
+            try {
+                const data = await chrome.storage.local.get(null);
+                const result = document.getElementById('test-data-result');
+                result.innerHTML = `
+                    <div class="info">Chrome storage contains ${Object.keys(data).length} items:</div>
+                    <div class="log">${JSON.stringify(data, null, 2)}</div>
+                `;
+                log(`Chrome storage has ${Object.keys(data).length} items`);
+            } catch (error) {
+                const result = document.getElementById('test-data-result');
+                result.innerHTML = `<div class="error">Failed to view storage: ${error.message}</div>`;
+                log(`Failed to view storage: ${error.message}`, 'error');
+            }
+        }
+
+        // Migration operations
+        async function performFullMigration() {
+            try {
+                const result = document.getElementById('migration-result');
+                result.innerHTML = '<div class="info">Migration in progress...</div>';
+                log('Starting full migration...', 'info');
+
+                const migrationResult = await migration.performFullMigration();
+                
+                result.innerHTML = `
+                    <div class="success">Migration completed successfully!</div>
+                    <div class="log">${JSON.stringify(migrationResult, null, 2)}</div>
+                `;
+                log('Full migration completed successfully', 'success');
+                
+                await checkMigrationStatus();
+            } catch (error) {
+                const result = document.getElementById('migration-result');
+                result.innerHTML = `<div class="error">Migration failed: ${error.message}</div>`;
+                log(`Migration failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function rollbackMigration() {
+            try {
+                const result = document.getElementById('migration-result');
+                result.innerHTML = '<div class="info">Rollback in progress...</div>';
+                log('Starting migration rollback...', 'warning');
+
+                const rollbackResult = await migration.rollbackMigration();
+                
+                result.innerHTML = `
+                    <div class="success">Rollback completed successfully!</div>
+                    <div class="log">${JSON.stringify(rollbackResult, null, 2)}</div>
+                `;
+                log('Migration rollback completed successfully', 'success');
+                
+                await checkMigrationStatus();
+            } catch (error) {
+                const result = document.getElementById('migration-result');
+                result.innerHTML = `<div class="error">Rollback failed: ${error.message}</div>`;
+                log(`Rollback failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function cleanupArtifacts() {
+            try {
+                const success = await migration.cleanupMigrationArtifacts();
+                const result = document.getElementById('migration-result');
+                
+                if (success) {
+                    result.innerHTML = '<div class="success">Migration artifacts cleaned up</div>';
+                    log('Migration artifacts cleaned up', 'success');
+                } else {
+                    result.innerHTML = '<div class="warning">Cleanup completed with warnings</div>';
+                    log('Cleanup completed with warnings', 'warning');
+                }
+            } catch (error) {
+                const result = document.getElementById('migration-result');
+                result.innerHTML = `<div class="error">Cleanup failed: ${error.message}</div>`;
+                log(`Cleanup failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Data validation
+        async function validateData() {
+            try {
+                const result = document.getElementById('validation-result');
+                result.innerHTML = '<div class="info">Validating data...</div>';
+                
+                // Get data from both sources
+                const chromeData = await chrome.storage.local.get(null);
+                const indexedData = {
+                    classified_cache: await mimirDB.getAllClassifiedData(),
+                    diaries: await mimirDB.getAllDiaries(),
+                    annual_reports: await mimirDB.getAllAnnualReports(),
+                    settings: await mimirDB.getAllSettings()
+                };
+
+                const validation = {
+                    chrome: {
+                        total: Object.keys(chromeData).length,
+                        classified: Object.keys(chromeData).filter(k => k.startsWith('classified-')).length,
+                        diaries: Object.keys(chromeData).filter(k => k.startsWith('diary-')).length,
+                        reports: Object.keys(chromeData).filter(k => k.startsWith('annual-report-')).length,
+                        settings: Object.keys(chromeData).filter(k => k === 'mimir-config' || k.startsWith('mimir-') || (!k.startsWith('classified-') && !k.startsWith('diary-') && !k.startsWith('annual-report-'))).length
+                    },
+                    indexedDB: {
+                        classified_cache: indexedData.classified_cache.length,
+                        diaries: indexedData.diaries.length,
+                        annual_reports: indexedData.annual_reports.length,
+                        settings: indexedData.settings.length
+                    }
+                };
+
+                result.innerHTML = `
+                    <div class="success">Data validation completed</div>
+                    <div class="log">${JSON.stringify(validation, null, 2)}</div>
+                `;
+                log('Data validation completed', 'success');
+            } catch (error) {
+                const result = document.getElementById('validation-result');
+                result.innerHTML = `<div class="error">Validation failed: ${error.message}</div>`;
+                log(`Validation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function compareData() {
+            try {
+                const result = document.getElementById('validation-result');
+                result.innerHTML = '<div class="info">Comparing data sources...</div>';
+                
+                // Sample comparison of a few records
+                const chromeData = await chrome.storage.local.get(null);
+                const comparison = { matches: 0, mismatches: 0, details: [] };
+
+                // Compare classified data
+                for (const [key, value] of Object.entries(chromeData)) {
+                    if (key.startsWith('classified-')) {
+                        const date = key.replace('classified-', '');
+                        const indexedRecord = await mimirDB.getClassifiedData(date);
+                        
+                        if (indexedRecord && JSON.stringify(indexedRecord.data) === JSON.stringify(value)) {
+                            comparison.matches++;
+                        } else {
+                            comparison.mismatches++;
+                            comparison.details.push(`Mismatch in classified data for ${date}`);
+                        }
+                    }
+                }
+
+                // Compare diary data
+                for (const [key, value] of Object.entries(chromeData)) {
+                    if (key.startsWith('diary-')) {
+                        const date = key.replace('diary-', '');
+                        const indexedRecord = await mimirDB.getDiary(date);
+                        
+                        if (indexedRecord && indexedRecord.content === value) {
+                            comparison.matches++;
+                        } else {
+                            comparison.mismatches++;
+                            comparison.details.push(`Mismatch in diary data for ${date}`);
+                        }
+                    }
+                }
+
+                result.innerHTML = `
+                    <div class="${comparison.mismatches === 0 ? 'success' : 'warning'}">
+                        Comparison completed: ${comparison.matches} matches, ${comparison.mismatches} mismatches
+                    </div>
+                    <div class="log">${JSON.stringify(comparison, null, 2)}</div>
+                `;
+                log(`Data comparison: ${comparison.matches} matches, ${comparison.mismatches} mismatches`, comparison.mismatches === 0 ? 'success' : 'warning');
+            } catch (error) {
+                const result = document.getElementById('validation-result');
+                result.innerHTML = `<div class="error">Comparison failed: ${error.message}</div>`;
+                log(`Comparison failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

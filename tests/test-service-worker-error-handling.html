@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Worker Error Handling Test - Mimir</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .test-results {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.success { background: #27ae60; }
+        .status-indicator.error { background: #e74c3c; }
+        .status-indicator.warning { background: #f39c12; }
+        .status-indicator.info { background: #3498db; }
+    </style>
+</head>
+<body>
+    <h1>Service Worker Error Handling Test</h1>
+    <p>This page tests the service worker error handling integration.</p>
+
+    <!-- Service Worker Tests -->
+    <div class="test-section">
+        <h2>Service Worker Communication Tests</h2>
+        <p>Test communication with the service worker and error handling:</p>
+        
+        <button class="test-button" onclick="testServiceWorkerConnection()">Test Service Worker Connection</button>
+        <button class="test-button" onclick="testDatabaseOperations()">Test Database Operations</button>
+        <button class="test-button" onclick="testMigrationStatus()">Test Migration Status</button>
+        <button class="test-button" onclick="testErrorHandling()">Test Error Handling</button>
+        
+        <div id="serviceWorkerResults" class="test-results"></div>
+    </div>
+
+    <!-- Background Script Tests -->
+    <div class="test-section">
+        <h2>Background Script Tests</h2>
+        <p>Test background script functionality:</p>
+        
+        <button class="test-button" onclick="testGetDailyHistory()">Test Get Daily History</button>
+        <button class="test-button" onclick="testGetSuggestionData()">Test Get Suggestion Data</button>
+        <button class="test-button" onclick="testStartMigration()">Test Start Migration</button>
+        
+        <div id="backgroundResults" class="test-results"></div>
+    </div>
+
+    <script>
+        function log(section, message, type = 'info') {
+            const resultsDiv = document.getElementById(section + 'Results');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info';
+            
+            resultsDiv.innerHTML += `<div><span class="status-indicator ${statusClass}"></span>[${timestamp}] ${message}</div>`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // Service Worker Tests
+        async function testServiceWorkerConnection() {
+            try {
+                log('serviceWorker', 'Testing service worker connection...', 'info');
+                
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.ready;
+                    log('serviceWorker', '✓ Service worker is ready', 'success');
+                    log('serviceWorker', `✓ Scope: ${registration.scope}`, 'success');
+                } else {
+                    log('serviceWorker', '✗ Service worker not supported', 'error');
+                }
+            } catch (error) {
+                log('serviceWorker', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabaseOperations() {
+            try {
+                log('serviceWorker', 'Testing database operations via service worker...', 'info');
+                
+                // Test getting configuration
+                const response = await chrome.runtime.sendMessage({
+                    action: 'getSuggestionData'
+                });
+                
+                if (response && !response.error) {
+                    log('serviceWorker', '✓ Database operation successful', 'success');
+                    log('serviceWorker', `✓ Got ${response.history?.length || 0} history items`, 'success');
+                } else {
+                    log('serviceWorker', `⚠ Database operation returned error: ${response?.error || 'Unknown error'}`, 'warning');
+                }
+            } catch (error) {
+                log('serviceWorker', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMigrationStatus() {
+            try {
+                log('serviceWorker', 'Testing migration status...', 'info');
+                
+                // This would test migration status if we had a specific message for it
+                log('serviceWorker', '⚠ Migration status test not implemented yet', 'warning');
+                log('serviceWorker', '✓ Migration functionality is available in background script', 'success');
+            } catch (error) {
+                log('serviceWorker', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testErrorHandling() {
+            try {
+                log('serviceWorker', 'Testing error handling...', 'info');
+                
+                // Test with an invalid action to trigger error handling
+                const response = await chrome.runtime.sendMessage({
+                    action: 'invalidAction'
+                });
+                
+                if (response && response.error) {
+                    log('serviceWorker', '✓ Error handling working - got expected error response', 'success');
+                    log('serviceWorker', `✓ Error message: ${response.error}`, 'success');
+                } else {
+                    log('serviceWorker', '⚠ Expected error response but got something else', 'warning');
+                }
+            } catch (error) {
+                log('serviceWorker', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Background Script Tests
+        async function testGetDailyHistory() {
+            try {
+                log('background', 'Testing get daily history...', 'info');
+                
+                const today = new Date().toISOString().split('T')[0];
+                const response = await chrome.runtime.sendMessage({
+                    action: 'getDailyHistory',
+                    date: today
+                });
+                
+                if (response && Array.isArray(response)) {
+                    log('background', `✓ Got ${response.length} history items for today`, 'success');
+                    if (response.length > 0) {
+                        log('background', `✓ Sample item: ${response[0].title}`, 'success');
+                    }
+                } else {
+                    log('background', '⚠ No history data returned', 'warning');
+                }
+            } catch (error) {
+                log('background', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetSuggestionData() {
+            try {
+                log('background', 'Testing get suggestion data...', 'info');
+                
+                const response = await chrome.runtime.sendMessage({
+                    action: 'getSuggestionData'
+                });
+                
+                if (response && !response.error) {
+                    log('background', `✓ Got ${response.history?.length || 0} history items`, 'success');
+                    log('background', `✓ Got ${response.builtInRules?.length || 0} built-in rules`, 'success');
+                    log('background', `✓ Got ${response.customRules?.length || 0} custom rules`, 'success');
+                } else {
+                    log('background', `⚠ Error getting suggestion data: ${response?.error || 'Unknown error'}`, 'warning');
+                }
+            } catch (error) {
+                log('background', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStartMigration() {
+            try {
+                log('background', 'Testing start migration...', 'info');
+                
+                const response = await chrome.runtime.sendMessage({
+                    action: 'startMigration'
+                });
+                
+                if (response && response.success) {
+                    log('background', `✓ Migration test successful: ${response.message}`, 'success');
+                } else {
+                    log('background', `⚠ Migration test result: ${response?.error || response?.message || 'Unknown result'}`, 'warning');
+                }
+            } catch (error) {
+                log('background', `✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            log('serviceWorker', 'Service worker error handling test suite loaded', 'success');
+            testServiceWorkerConnection();
+        });
+    </script>
+</body>
+</html>

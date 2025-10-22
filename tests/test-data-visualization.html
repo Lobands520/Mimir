@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Data Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Visualization Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Database Connection</h3>
+        <button onclick="testDatabaseConnection()">Test DB Connection</button>
+        <button onclick="addSampleData()">Add Sample Data</button>
+        <button onclick="testDataRetrieval()">Test Data Retrieval</button>
+        <button onclick="testSearchAndFilter()">Test Search & Filter</button>
+        <button onclick="testSorting()">Test Sorting</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Open Data Manager</h3>
+        <button onclick="openDataManager()">Open Data Manager</button>
+    </div>
+
+    <div id="results"></div>
+
+    <!-- Load required libraries -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+
+    <script>
+        let db;
+        const results = document.getElementById('results');
+
+        function log(message) {
+            results.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        async function testDatabaseConnection() {
+            try {
+                log('Testing database connection...');
+                db = new MimirDB();
+                await db.initialize();
+                log('✅ Database connection successful');
+            } catch (error) {
+                log('❌ Database connection failed: ' + error.message);
+            }
+        }
+
+        async function addSampleData() {
+            try {
+                if (!db) {
+                    await testDatabaseConnection();
+                }
+
+                log('Adding sample data...');
+
+                // Add sample history records
+                await db.addHistoryRecord({
+                    timestamp: Date.now() - 86400000, // 1 day ago
+                    url: 'https://github.com/example/repo',
+                    title: 'Example Repository - GitHub',
+                    domain: 'github.com',
+                    visitCount: 5
+                });
+
+                await db.addHistoryRecord({
+                    timestamp: Date.now() - 3600000, // 1 hour ago
+                    url: 'https://stackoverflow.com/questions/example',
+                    title: 'How to implement IndexedDB - Stack Overflow',
+                    domain: 'stackoverflow.com',
+                    visitCount: 2
+                });
+
+                // Add sample diary
+                await db.saveDiary('2024-08-04', 'Today I worked on implementing the data visualization features for the Mimir dashboard. The IndexedDB integration is working well.', 'Data Visualization Progress');
+
+                // Add sample classified data
+                await db.saveClassifiedData('2024-08-04', {
+                    categories: ['development', 'learning'],
+                    summary: 'Focused on database implementation',
+                    totalTime: 480
+                });
+
+                // Add sample settings
+                await db.saveSetting('theme', 'dark', 'ui');
+                await db.saveSetting('autoBackup', true, 'data');
+
+                log('✅ Sample data added successfully');
+            } catch (error) {
+                log('❌ Failed to add sample data: ' + error.message);
+            }
+        }
+
+        async function testDataRetrieval() {
+            try {
+                if (!db) {
+                    await testDatabaseConnection();
+                }
+
+                log('Testing data retrieval...');
+
+                const history = await db.getAllHistory();
+                log(`📊 History records: ${history.length}`);
+
+                const diaries = await db.getAllDiaries();
+                log(`📊 Diary records: ${diaries.length}`);
+
+                const classified = await db.getAllClassifiedData();
+                log(`📊 Classified records: ${classified.length}`);
+
+                const settings = await db.getAllSettings();
+                log(`📊 Settings records: ${settings.length}`);
+
+                log('✅ Data retrieval test completed');
+            } catch (error) {
+                log('❌ Data retrieval test failed: ' + error.message);
+            }
+        }
+
+        async function testSearchAndFilter() {
+            try {
+                if (!db) {
+                    await testDatabaseConnection();
+                }
+
+                log('Testing search functionality...');
+
+                const searchResults = await db.searchAll('github');
+                log(`🔍 Search results for "github": ${JSON.stringify(searchResults, null, 2)}`);
+
+                log('✅ Search test completed');
+            } catch (error) {
+                log('❌ Search test failed: ' + error.message);
+            }
+        }
+
+        async function testSorting() {
+            try {
+                if (!db) {
+                    await testDatabaseConnection();
+                }
+
+                log('Testing sorting functionality...');
+
+                const history = await db.getAllHistory();
+                const sorted = history.sort((a, b) => b.timestamp - a.timestamp);
+                log(`📈 Sorted history (${sorted.length} records by timestamp desc)`);
+
+                log('✅ Sorting test completed');
+            } catch (error) {
+                log('❌ Sorting test failed: ' + error.message);
+            }
+        }
+
+        function openDataManager() {
+            window.open('data-manager.html', '_blank');
+        }
+
+        // Auto-run basic test on load
+        window.addEventListener('load', () => {
+            log('🚀 Data visualization test page loaded');
+            log('Click buttons above to run tests');
+        });
+    </script>
+</body>
+</html>

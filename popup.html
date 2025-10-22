@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimir - 快速入口</title>
+    <link rel="icon" type="image/x-icon" href="icon/icon-32x32.ico">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <div class="logo">🧠</div>
+        <div class="app-name">Mimir</div>
+        <div class="app-desc">个人记忆与反思仪表盘</div>
+        
+        <div class="stats" id="stats">
+            <div class="loading">加载中...</div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="openDashboardBtn">打开仪表盘</button>
+            <button class="btn btn-secondary" id="openSettingsBtn">设置</button>
+        </div>
+    </div>
+
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

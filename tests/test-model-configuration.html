@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型配置测试 - Mimir</title>
+    <link rel="icon" type="image/x-icon" href="../icon/icon-32x32.ico">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .config-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .model-input {
+            margin: 10px 0;
+        }
+        .model-input input {
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 模型配置测试</h1>
+    
+    <div class="test-section">
+        <h3>问题描述</h3>
+        <p>用户反映：在设置中更换了分析模型，但系统仍然调用GPT-3.5模型。</p>
+        <p><strong>可能原因</strong>：</p>
+        <ul>
+            <li>配置没有正确保存</li>
+            <li>配置没有正确加载</li>
+            <li>代码中有硬编码的默认值</li>
+            <li>字段名不匹配</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>1. 当前配置检查</h3>
+        <button onclick="checkCurrentConfig()">检查当前配置</button>
+        <div id="configResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 模拟配置保存</h3>
+        <div class="model-input">
+            <label>分析模型：</label>
+            <input type="text" id="testAnalysisModel" placeholder="gpt-4o" value="gpt-4o">
+        </div>
+        <div class="model-input">
+            <label>日记模型：</label>
+            <input type="text" id="testDiaryModel" placeholder="gpt-4" value="gpt-4">
+        </div>
+        <button onclick="saveTestConfig()">保存测试配置</button>
+        <button onclick="loadTestConfig()">加载测试配置</button>
+        <div id="saveResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 模型调用测试</h3>
+        <button onclick="testModelUsage()">测试模型使用</button>
+        <div id="modelUsageResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 修复建议</h3>
+        <div id="fixSuggestions"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试日志</h3>
+        <div id="testLog" class="log"></div>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="../lib/idb.js"></script>
+    <script src="../lib/error-handler.js"></script>
+    <script src="../lib/error-ui.js"></script>
+    <script src="../lib/mimir-db.js"></script>
+    <script src="../lib/db-wrapper.js"></script>
+
+    <script>
+        let testLog = '';
+        
+        function log(message) {
+            testLog += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            document.getElementById('testLog').textContent = testLog;
+            console.log(message);
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        // 检查当前配置
+        async function checkCurrentConfig() {
+            log('开始检查当前配置...');
+            
+            try {
+                // 初始化数据库
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+
+                // 获取当前配置
+                const settings = await window.dbWrapper.get('mimir-config');
+                const config = settings['mimir-config'] || {};
+
+                const configDisplay = `
+<div class="config-display">
+<strong>当前配置：</strong>
+{
+  "apiKey": "${config.apiKey ? '***已设置***' : '未设置'}",
+  "apiUrl": "${config.apiUrl || '未设置'}",
+  "model": "${config.model || '未设置'}",
+  "diaryModel": "${config.diaryModel || '未设置'}",
+  "useAIClassification": ${config.useAIClassification},
+  "customPrompt": "${config.customPrompt ? '已设置' : '未设置'}",
+  "enableDiaryComparison": ${config.enableDiaryComparison},
+  "enableStreaming": ${config.enableStreaming}
+}
+</div>`;
+
+                let issues = [];
+                if (!config.model || config.model === 'gpt-3.5-turbo') {
+                    issues.push('⚠️ 分析模型仍为默认的gpt-3.5-turbo');
+                }
+                if (!config.diaryModel || config.diaryModel === 'gpt-4') {
+                    issues.push('ℹ️ 日记模型为默认的gpt-4');
+                }
+                if (!config.apiKey) {
+                    issues.push('❌ API Key未设置');
+                }
+
+                const resultHtml = configDisplay + (issues.length > 0 ? 
+                    '<div class="test-result warning">' + issues.join('<br>') + '</div>' : 
+                    '<div class="test-result success">✅ 配置看起来正常</div>');
+
+                document.getElementById('configResult').innerHTML = resultHtml;
+                log('✅ 配置检查完成');
+                
+            } catch (error) {
+                log('❌ 配置检查失败: ' + error.message);
+                showResult('configResult', '配置检查失败: ' + error.message, 'error');
+            }
+        }
+
+        // 保存测试配置
+        async function saveTestConfig() {
+            log('开始保存测试配置...');
+            
+            try {
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+
+                const testConfig = {
+                    apiKey: 'test-key',
+                    apiUrl: 'https://api.openai.com/v1/chat/completions',
+                    model: document.getElementById('testAnalysisModel').value,
+                    diaryModel: document.getElementById('testDiaryModel').value,
+                    useAIClassification: true,
+                    customPrompt: '',
+                    enableDiaryComparison: false,
+                    enableStreaming: true
+                };
+
+                await window.dbWrapper.set({ 'mimir-config': testConfig });
+                
+                log('✅ 测试配置保存成功');
+                showResult('saveResult', `✅ 配置已保存：分析模型=${testConfig.model}, 日记模型=${testConfig.diaryModel}`, 'success');
+                
+            } catch (error) {
+                log('❌ 保存测试配置失败: ' + error.message);
+                showResult('saveResult', '保存失败: ' + error.message, 'error');
+            }
+        }
+
+        // 加载测试配置
+        async function loadTestConfig() {
+            log('开始加载测试配置...');
+            
+            try {
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+
+                const settings = await window.dbWrapper.get('mimir-config');
+                const config = settings['mimir-config'] || {};
+
+                document.getElementById('testAnalysisModel').value = config.model || 'gpt-3.5-turbo';
+                document.getElementById('testDiaryModel').value = config.diaryModel || 'gpt-4';
+                
+                log('✅ 测试配置加载成功');
+                showResult('saveResult', `✅ 配置已加载：分析模型=${config.model}, 日记模型=${config.diaryModel}`, 'success');
+                
+            } catch (error) {
+                log('❌ 加载测试配置失败: ' + error.message);
+                showResult('saveResult', '加载失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试模型使用
+        async function testModelUsage() {
+            log('开始测试模型使用...');
+            
+            try {
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+
+                const settings = await window.dbWrapper.get('mimir-config');
+                const config = settings['mimir-config'] || {};
+
+                // 模拟dashboard.js中的模型选择逻辑
+                const classificationConfig = {
+                    ...config,
+                    model: config.model || 'gpt-3.5-turbo',  // 这里是问题所在！
+                    temperature: 0.1
+                };
+
+                const diaryConfig = {
+                    ...config,
+                    model: config.diaryModel || config.model || 'gpt-4',
+                    temperature: 0.7
+                };
+
+                const results = [
+                    `🔍 分析模型将使用: <strong>${classificationConfig.model}</strong>`,
+                    `✨ 日记模型将使用: <strong>${diaryConfig.model}</strong>`,
+                    `📋 用户设置的分析模型: <strong>${config.model || '未设置'}</strong>`,
+                    `📋 用户设置的日记模型: <strong>${config.diaryModel || '未设置'}</strong>`
+                ];
+
+                let type = 'success';
+                if (classificationConfig.model === 'gpt-3.5-turbo' && config.model && config.model !== 'gpt-3.5-turbo') {
+                    results.push('<br>❌ <strong>问题发现</strong>：用户设置了不同的模型，但系统仍使用默认模型！');
+                    type = 'error';
+                }
+
+                showResult('modelUsageResult', results.join('<br>'), type);
+                log('✅ 模型使用测试完成');
+                
+            } catch (error) {
+                log('❌ 模型使用测试失败: ' + error.message);
+                showResult('modelUsageResult', '测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示修复建议
+        function showFixSuggestions() {
+            const suggestions = `
+<div class="test-result info">
+<h4>🔧 修复建议：</h4>
+<ol>
+<li><strong>检查字段名一致性</strong>：确保settings.js和dashboard.js使用相同的字段名</li>
+<li><strong>移除硬编码默认值</strong>：在dashboard.js中移除硬编码的'gpt-3.5-turbo'</li>
+<li><strong>添加调试日志</strong>：在模型选择时添加console.log来追踪实际使用的模型</li>
+<li><strong>配置验证</strong>：在生成日记前验证配置是否正确加载</li>
+</ol>
+
+<h4>🚀 已修复的问题：</h4>
+<ul>
+<li>✅ 修复了dashboard.js中的字段名不一致问题（classificationModel → model）</li>
+<li>✅ 添加了emoji字体支持，修复图标显示问题</li>
+</ul>
+</div>`;
+            
+            document.getElementById('fixSuggestions').innerHTML = suggestions;
+        }
+
+        // 页面加载完成后自动运行
+        window.addEventListener('load', () => {
+            log('页面加载完成，模型配置测试准备就绪');
+            showFixSuggestions();
+            checkCurrentConfig();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流式传输测试</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>流式传输测试</h2>
+            <button id="testStreamBtn" class="btn btn-primary">测试流式传输</button>
+            <div class="diary-content" id="diaryContent" style="margin-top: 20px; min-height: 200px;">
+                点击按钮开始测试...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟流式传输效果
+        function simulateStreaming() {
+            const content = `今天是2025年8月2日，星期六。
+
+从今天的浏览记录来看，我主要专注于编程开发相关的内容。访问了GitHub、Stack Overflow等技术网站，说明我在积极学习和解决技术问题。
+
+这种持续学习的态度值得肯定。建议可以：
+1. 记录学习笔记，巩固知识点
+2. 尝试将学到的知识应用到实际项目中
+3. 保持规律的学习节奏
+
+总的来说，今天是充实的一天！`;
+
+            const diaryContent = document.getElementById('diaryContent');
+            let currentIndex = 0;
+            
+            // 清空内容并显示光标
+            diaryContent.innerHTML = '<span class="typing-cursor">|</span>';
+            
+            function typeNextChar() {
+                if (currentIndex < content.length) {
+                    const currentText = content.substring(0, currentIndex + 1);
+                    diaryContent.innerHTML = formatDiaryContent(currentText) + '<span class="typing-cursor">|</span>';
+                    currentIndex++;
+                    setTimeout(typeNextChar, 50); // 50ms间隔
+                } else {
+                    // 完成后移除光标
+                    diaryContent.innerHTML = formatDiaryContent(content);
+                }
+            }
+            
+            typeNextChar();
+        }
+        
+        function formatDiaryContent(content) {
+            return content
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/^/, '<p>')
+                .replace(/$/, '</p>');
+        }
+
+        document.getElementById('testStreamBtn').addEventListener('click', simulateStreaming);
+    </script>
+</body>
+</html>

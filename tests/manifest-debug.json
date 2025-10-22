@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Mimir Debug - 个人记忆与反思仪表盘",
+  "version": "1.0",
+  "description": "Debug version for testing service worker issues",
+  "permissions": [
+    "history",
+    "tabs",
+    "storage",
+    "activeTab",
+    "alarms"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["data-manager.html", "test-service-worker-simple.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "background-debug.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Mimir Debug"
+  },
+  "options_page": "settings.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+  },
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://*.openai.azure.com/*"
+  ]
+}

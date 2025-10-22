@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Mimir - 个人记忆与反思仪表盘",
+  "version": "1.0",
+  "description": "自动收集浏览历史，AI生成个性化日记，完全私密存储",
+  "icons": {
+    "16": "icon/icon-16x16.ico",
+    "32": "icon/icon-32x32.ico",
+    "48": "icon/icon-48x48.ico",
+    "64": "icon/icon-64x64.ico",
+    "128": "icon/icon-128x128.ico",
+    "256": "icon/icon-256x256.ico"
+  },
+  "permissions": [
+    "history",
+    "tabs",
+    "storage",
+    "activeTab",
+    "alarms"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["data-manager.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Mimir仪表盘",
+    "default_icon": {
+      "16": "icon/icon-16x16.ico",
+      "32": "icon/icon-32x32.ico",
+      "48": "icon/icon-48x48.ico",
+      "64": "icon/icon-64x64.ico"
+    }
+  },
+  "options_page": "settings.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+  },
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://*.openai.azure.com/*"
+  ]
+}

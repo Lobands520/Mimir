@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MimirDB Initialization Test</title>
+</head>
+<body>
+    <h1>MimirDB Initialization Test</h1>
+    <div id="status">Initializing...</div>
+    <div id="info"></div>
+    <button id="testBtn" onclick="testDatabase()">Test Database</button>
+    
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/migration.js"></script>
+    
+    <script>
+        async function testDatabase() {
+            const statusDiv = document.getElementById('status');
+            const infoDiv = document.getElementById('info');
+            
+            try {
+                statusDiv.textContent = 'Initializing MimirDB...';
+                
+                // Create and initialize database
+                const mimirDB = new MimirDB();
+                await mimirDB.initialize();
+                
+                // Get database info
+                const info = await mimirDB.getInfo();
+                
+                statusDiv.textContent = 'Database initialized successfully!';
+                infoDiv.innerHTML = `
+                    <h3>Database Info:</h3>
+                    <p><strong>Name:</strong> ${info.name}</p>
+                    <p><strong>Version:</strong> ${info.version}</p>
+                    <p><strong>Object Stores:</strong> ${info.objectStoreNames.join(', ')}</p>
+                `;
+                
+                // Test getting each store
+                const stores = ['history', 'classified_cache', 'diaries', 'annual_reports', 'settings'];
+                for (const storeName of stores) {
+                    const store = await mimirDB.getStore(storeName);
+                    console.log(`✓ Successfully accessed ${storeName} store`);
+                }
+                
+                // Test basic CRUD operations
+                console.log('Testing basic CRUD operations...');
+                
+                // Test settings
+                await mimirDB.saveSetting('test-key', 'test-value', 'test');
+                const testValue = await mimirDB.getSetting('test-key');
+                console.log(`✓ Settings CRUD test: ${testValue === 'test-value' ? 'PASSED' : 'FAILED'}`);
+                
+                // Test classified cache
+                const testDate = '2024-08-04';
+                await mimirDB.saveClassifiedData(testDate, { test: 'data' });
+                const classifiedData = await mimirDB.getClassifiedData(testDate);
+                console.log(`✓ Classified cache CRUD test: ${classifiedData ? 'PASSED' : 'FAILED'}`);
+                
+                // Test diary
+                await mimirDB.saveDiary(testDate, 'Test diary content', 'Test Title');
+                const diaryData = await mimirDB.getDiary(testDate);
+                console.log(`✓ Diary CRUD test: ${diaryData ? 'PASSED' : 'FAILED'}`);
+                
+                console.log('All Object Stores accessible and CRUD operations working!');
+                
+            } catch (error) {
+                statusDiv.textContent = 'Error: ' + error.message;
+                console.error('Database test failed:', error);
+            }
+        }
+        
+        // Auto-run test on page load
+        window.addEventListener('load', testDatabase);
+    </script>
+</body>
+</html>

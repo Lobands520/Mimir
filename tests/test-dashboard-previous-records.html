@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试仪表盘历史记录显示</title>
+    <link rel="icon" type="image/x-icon" href="../icon/icon-32x32.ico">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 仪表盘历史记录显示测试</h1>
+    
+    <div class="test-section">
+        <h3>测试目标</h3>
+        <ul>
+            <li>✅ 验证"今日浏览历史"默认关闭</li>
+            <li>✅ 验证没有重复的▼符号</li>
+            <li>🔍 验证能正确显示和读取之前的记录（日记、分类缓存、年度报告）</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>1. HTML结构测试</h3>
+        <button onclick="testHTMLStructure()">测试HTML结构</button>
+        <div id="htmlTestResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 数据库记录测试</h3>
+        <button onclick="createTestData()">创建测试数据</button>
+        <button onclick="testDatabaseRecords()">测试数据库记录</button>
+        <div id="dbTestResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 历史记录显示测试</h3>
+        <button onclick="testHistoryDisplay()">测试历史记录显示</button>
+        <div id="historyTestResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试日志</h3>
+        <div id="testLog" class="log"></div>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="../lib/idb.js"></script>
+    <script src="../lib/error-handler.js"></script>
+    <script src="../lib/error-ui.js"></script>
+    <script src="../lib/mimir-db.js"></script>
+    <script src="../lib/db-wrapper.js"></script>
+    <script src="../lib/migration.js"></script>
+
+    <script>
+        let testLog = '';
+        
+        function log(message) {
+            testLog += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            document.getElementById('testLog').textContent = testLog;
+            console.log(message);
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        // 测试HTML结构
+        async function testHTMLStructure() {
+            log('开始测试HTML结构...');
+            
+            try {
+                // 模拟加载dashboard.html内容进行测试
+                const response = await fetch('../dashboard.html');
+                const htmlContent = await response.text();
+                
+                // 检查今日浏览历史是否默认关闭（没有open属性）
+                const hasOpenAttribute = htmlContent.includes('<details class="card history-section" id="historySection" open>');
+                const hasClosedDetails = htmlContent.includes('<details class="card history-section" id="historySection">');
+                
+                // 检查是否有重复的▼符号
+                const arrowCount = (htmlContent.match(/▼/g) || []).length;
+                
+                let results = [];
+                
+                if (!hasOpenAttribute && hasClosedDetails) {
+                    results.push('✅ 今日浏览历史默认关闭状态正确');
+                    log('✅ 今日浏览历史默认关闭');
+                } else {
+                    results.push('❌ 今日浏览历史状态不正确');
+                    log('❌ 今日浏览历史状态错误');
+                }
+                
+                if (arrowCount === 0) {
+                    results.push('✅ 没有重复的▼符号');
+                    log('✅ 没有发现▼符号');
+                } else {
+                    results.push(`❌ 发现${arrowCount}个▼符号`);
+                    log(`❌ 发现${arrowCount}个▼符号`);
+                }
+                
+                showResult('htmlTestResult', results.join('<br>'), 'success');
+                
+            } catch (error) {
+                log('❌ HTML结构测试失败: ' + error.message);
+                showResult('htmlTestResult', '测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 创建测试数据
+        async function createTestData() {
+            log('开始创建测试数据...');
+            
+            try {
+                // 初始化数据库
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+                
+                const today = new Date().toISOString().split('T')[0];
+                const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const currentYear = new Date().getFullYear();
+                
+                // 创建测试分类数据
+                const testClassifiedData = {
+                    date: yesterday,
+                    totalItems: 10,
+                    categories: [
+                        {
+                            name: '编程与开发',
+                            count: 5,
+                            domains: ['github.com', 'stackoverflow.com'],
+                            keyTitles: ['React文档', 'JavaScript教程']
+                        }
+                    ]
+                };
+                
+                // 创建测试日记数据
+                const testDiary = `# ${yesterday} 的反思日记\n\n今天主要专注于编程学习，浏览了React相关文档...`;
+                
+                // 创建测试年度报告数据
+                const testAnnualReport = {
+                    year: currentYear,
+                    generatedAt: new Date().toISOString(),
+                    summary: '这是一个测试年度报告',
+                    totalVisits: 1000,
+                    topCategories: ['编程与开发', '工作与生产力']
+                };
+                
+                // 保存测试数据
+                await window.dbWrapper.set({
+                    [`classified-${yesterday}`]: testClassifiedData,
+                    [`diary-${yesterday}`]: testDiary,
+                    [`annual-report-${currentYear}`]: testAnnualReport
+                });
+                
+                log('✅ 测试数据创建成功');
+                showResult('dbTestResult', '✅ 测试数据创建成功', 'success');
+                
+            } catch (error) {
+                log('❌ 创建测试数据失败: ' + error.message);
+                showResult('dbTestResult', '创建测试数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试数据库记录
+        async function testDatabaseRecords() {
+            log('开始测试数据库记录...');
+            
+            try {
+                if (!window.dbWrapper) {
+                    window.dbWrapper = new DatabaseWrapper();
+                    await window.dbWrapper.initialize();
+                }
+                
+                const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const currentYear = new Date().getFullYear();
+                
+                // 检查分类数据
+                const classifiedResult = await window.dbWrapper.get(`classified-${yesterday}`);
+                const hasClassified = classifiedResult[`classified-${yesterday}`];
+                
+                // 检查日记数据
+                const diaryResult = await window.dbWrapper.get(`diary-${yesterday}`);
+                const hasDiary = diaryResult[`diary-${yesterday}`];
+                
+                // 检查年度报告数据
+                const reportResult = await window.dbWrapper.get(`annual-report-${currentYear}`);
+                const hasReport = reportResult[`annual-report-${currentYear}`];
+                
+                let results = [];
+                
+                if (hasClassified) {
+                    results.push(`✅ 找到${yesterday}的分类缓存数据`);
+                    log(`✅ 分类数据: ${JSON.stringify(hasClassified).substring(0, 100)}...`);
+                } else {
+                    results.push(`❌ 未找到${yesterday}的分类缓存数据`);
+                }
+                
+                if (hasDiary) {
+                    results.push(`✅ 找到${yesterday}的日记数据`);
+                    log(`✅ 日记数据: ${hasDiary.substring(0, 50)}...`);
+                } else {
+                    results.push(`❌ 未找到${yesterday}的日记数据`);
+                }
+                
+                if (hasReport) {
+                    results.push(`✅ 找到${currentYear}年的年度报告`);
+                    log(`✅ 年度报告: ${JSON.stringify(hasReport).substring(0, 100)}...`);
+                } else {
+                    results.push(`❌ 未找到${currentYear}年的年度报告`);
+                }
+                
+                showResult('dbTestResult', results.join('<br>'), results.every(r => r.startsWith('✅')) ? 'success' : 'error');
+                
+            } catch (error) {
+                log('❌ 数据库记录测试失败: ' + error.message);
+                showResult('dbTestResult', '数据库记录测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试历史记录显示
+        async function testHistoryDisplay() {
+            log('开始测试历史记录显示功能...');
+            
+            try {
+                // 模拟dashboard.js的关键函数
+                const mockDashboard = {
+                    currentDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    
+                    async loadAnalysisData() {
+                        const classifiedKey = `classified-${this.currentDate}`;
+                        const classifiedResult = await window.dbWrapper.get(classifiedKey);
+                        
+                        if (classifiedResult[classifiedKey]) {
+                            log(`✅ 成功加载${this.currentDate}的分析数据`);
+                            return { success: true, data: classifiedResult[classifiedKey] };
+                        } else {
+                            log(`ℹ️ ${this.currentDate}没有分析数据，显示占位符`);
+                            return { success: false, placeholder: true };
+                        }
+                    },
+                    
+                    async loadDiaryData() {
+                        const diaryKey = `diary-${this.currentDate}`;
+                        const diaryResult = await window.dbWrapper.get(diaryKey);
+                        
+                        if (diaryResult[diaryKey]) {
+                            log(`✅ 成功加载${this.currentDate}的日记数据`);
+                            return { success: true, data: diaryResult[diaryKey] };
+                        } else {
+                            log(`ℹ️ ${this.currentDate}没有日记数据，隐藏日记区域`);
+                            return { success: false, hidden: true };
+                        }
+                    },
+                    
+                    async onYearChange() {
+                        const year = new Date().getFullYear();
+                        const reportKey = `annual-report-${year}`;
+                        const existingReport = await window.dbWrapper.get(reportKey);
+                        
+                        if (existingReport[reportKey]) {
+                            log(`✅ 找到${year}年的已有报告，直接显示`);
+                            return { success: true, existing: true, data: existingReport[reportKey] };
+                        } else {
+                            log(`ℹ️ ${year}年没有已有报告，显示生成按钮`);
+                            return { success: false, needGenerate: true };
+                        }
+                    }
+                };
+                
+                // 测试各个功能
+                const analysisResult = await mockDashboard.loadAnalysisData();
+                const diaryResult = await mockDashboard.loadDiaryData();
+                const annualResult = await mockDashboard.onYearChange();
+                
+                let results = [];
+                
+                if (analysisResult.success) {
+                    results.push('✅ 分析数据加载功能正常');
+                } else if (analysisResult.placeholder) {
+                    results.push('✅ 分析数据占位符显示正常');
+                } else {
+                    results.push('❌ 分析数据加载异常');
+                }
+                
+                if (diaryResult.success) {
+                    results.push('✅ 日记数据加载功能正常');
+                } else if (diaryResult.hidden) {
+                    results.push('✅ 日记数据隐藏逻辑正常');
+                } else {
+                    results.push('❌ 日记数据加载异常');
+                }
+                
+                if (annualResult.success && annualResult.existing) {
+                    results.push('✅ 年度报告历史记录显示正常');
+                } else if (annualResult.needGenerate) {
+                    results.push('✅ 年度报告生成逻辑正常');
+                } else {
+                    results.push('❌ 年度报告功能异常');
+                }
+                
+                showResult('historyTestResult', results.join('<br>'), results.every(r => r.startsWith('✅')) ? 'success' : 'error');
+                log('✅ 历史记录显示测试完成');
+                
+            } catch (error) {
+                log('❌ 历史记录显示测试失败: ' + error.message);
+                showResult('historyTestResult', '历史记录显示测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 页面加载完成后自动运行HTML结构测试
+        window.addEventListener('load', () => {
+            log('页面加载完成，开始自动测试...');
+            testHTMLStructure();
+        });
+    </script>
+</body>
+</html>

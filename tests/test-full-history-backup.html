@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整历史记录备份测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-button { background: #3498db; color: white; border: none; padding: 12px 24px; margin: 8px; border-radius: 4px; cursor: pointer; }
+        .test-button:hover { background: #2980b9; }
+        .test-button:disabled { background: #95a5a6; cursor: not-allowed; }
+        .test-results { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-indicator.success { background: #27ae60; }
+        .status-indicator.error { background: #e74c3c; }
+        .status-indicator.warning { background: #f39c12; }
+        .status-indicator.info { background: #3498db; }
+        .stats-card { background: #ecf0f1; padding: 15px; margin: 10px; border-radius: 8px; display: inline-block; min-width: 150px; text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        .stat-label { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>完整历史记录备份测试</h1>
+    <p>测试修复后的历史记录备份功能，确保能够处理您的10793+条记录</p>
+
+    <div class="test-section">
+        <h2>📊 当前状态</h2>
+        <div class="stats-card">
+            <div class="stat-number" id="browserCount">-</div>
+            <div class="stat-label">浏览器记录</div>
+        </div>
+        <div class="stats-card">
+            <div class="stat-number" id="backupCount">-</div>
+            <div class="stat-label">已备份记录</div>
+        </div>
+        <div class="stats-card">
+            <div class="stat-number" id="coveragePercent">-</div>
+            <div class="stat-label">覆盖率</div>
+        </div>
+        
+        <button class="test-button" onclick="checkCurrentStatus()">🔍 检查当前状态</button>
+        <div id="statusResults" class="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 完整备份测试</h2>
+        <p><strong>警告：</strong>这将备份您的所有历史记录，可能需要较长时间</p>
+        
+        <button class="test-button" onclick="testFullBackup()" id="fullBackupBtn">🔄 开始完整备份测试</button>
+        <button class="test-button" onclick="testDatabaseQuery()" id="queryBtn">🔍 测试数据库查询</button>
+        
+        <div id="backupResults" class="test-results"></div>
+    </div>
+
+    <script src="lib/idb.js"></script>
+    <script src="lib/error-handler.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+
+    <script>
+        function log(section, message, type = 'info') {
+            const resultsDiv = document.getElementById(section + 'Results');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info';
+            resultsDiv.innerHTML += `<div><span class="status-indicator ${statusClass}"></span>[${timestamp}] ${message}</div>`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        async function checkCurrentStatus() {
+            try {
+                log('status', '检查当前备份状态...', 'info');
+                
+                const status = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ action: 'getBackupStatus' }, resolve);
+                });
+                
+                if (status.success) {
+                    document.getElementById('browserCount').textContent = status.browserHistoryCount.toLocaleString();
+                    document.getElementById('backupCount').textContent = status.totalBackedUpRecords.toLocaleString();
+                    document.getElementById('coveragePercent').textContent = status.backupCoverage + '%';
+                    
+                    log('status', `✓ 浏览器历史记录: ${status.browserHistoryCount.toLocaleString()} 条`, 'success');
+                    log('status', `✓ 已备份记录: ${status.totalBackedUpRecords.toLocaleString()} 条`, 'success');
+                    log('status', `✓ 备份覆盖率: ${status.backupCoverage}%`, status.backupCoverage >= 90 ? 'success' : 'warning');
+                    
+                    if (status.needsFullBackup) {
+                        log('status', '⚠ 建议进行完整备份以提高覆盖率', 'warning');
+                    }
+                } else {
+                    log('status', `✗ 获取状态失败: ${status.error}`, 'error');
+                }
+            } catch (error) {
+                log('status', `✗ 检查状态失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFullBackup() {
+            const confirmed = confirm('确定要进行完整备份测试吗？\n\n这将备份您的所有历史记录，可能需要10-20分钟时间。');
+            if (!confirmed) return;
+            
+            try {
+                const btn = document.getElementById('fullBackupBtn');
+                btn.disabled = true;
+                btn.textContent = '🔄 完整备份进行中...';
+                
+                log('backup', '开始完整备份测试...', 'warning');
+                log('backup', '请耐心等待，这可能需要较长时间...', 'info');
+                
+                const startTime = Date.now();
+                const result = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ action: 'fullBackupHistory' }, resolve);
+                });
+                
+                const duration = Date.now() - startTime;
+                
+                if (result.success) {
+                    log('backup', `✓ 完整备份成功！`, 'success');
+                    log('backup', `✓ 耗时: ${(duration/1000/60).toFixed(2)} 分钟`, 'success');
+                    log('backup', `✓ 处理记录: ${result.totalRecords.toLocaleString()} 条`, 'info');
+                    log('backup', `✓ 新增备份: ${result.backedUpRecords.toLocaleString()} 条`, 'success');
+                    log('backup', `✓ 跳过重复: ${result.skippedRecords.toLocaleString()} 条`, 'info');
+                    
+                    // 刷新状态
+                    await checkCurrentStatus();
+                } else {
+                    log('backup', `✗ 完整备份失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log('backup', `✗ 备份测试失败: ${error.message}`, 'error');
+            } finally {
+                const btn = document.getElementById('fullBackupBtn');
+                btn.disabled = false;
+                btn.textContent = '🔄 开始完整备份测试';
+            }
+        }
+
+        async function testDatabaseQuery() {
+            try {
+                log('backup', '测试数据库查询性能...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                
+                const startTime = Date.now();
+                const allHistory = await db.getAllHistory(); // 现在应该返回所有记录
+                const queryTime = Date.now() - startTime;
+                
+                log('backup', `✓ 查询完成，耗时: ${queryTime}ms`, 'success');
+                log('backup', `✓ 数据库中的记录数: ${allHistory.length.toLocaleString()} 条`, 'success');
+                
+                if (allHistory.length > 1000) {
+                    log('backup', `✓ 成功突破1000条限制！`, 'success');
+                } else {
+                    log('backup', `⚠ 记录数仍然较少，可能需要进行完整备份`, 'warning');
+                }
+                
+            } catch (error) {
+                log('backup', `✗ 数据库查询失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动检查状态
+        window.addEventListener('load', () => {
+            log('status', '页面加载完成，开始检查状态...', 'info');
+            checkCurrentStatus();
+        });
+    </script>
+</body>
+</html>

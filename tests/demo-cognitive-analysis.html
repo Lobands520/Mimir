@@ -1,0 +1,177 @@
+           font-size: 14px;
+            line-height: 1.8;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .evolution {
+            background: #d4edda;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .ladder {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+        }
+        .ladder-item {
+            text-align: center;
+            flex: 1;
+        }
+        .settings-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .checkbox-demo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .checkbox-demo input[type="checkbox"] {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🧠 Mimir 认知模式分析系统</h1>
+        <p class="lead">从简单的浏览记录到深度的认知洞察</p>
+
+        <div class="ladder">
+            <div class="ladder-item">
+                <div>阶梯一</div>
+                <div>本能冲动</div>
+            </div>
+            <div class="ladder-item">
+                <div>阶梯二</div>
+                <div>规则角色</div>
+            </div>
+            <div class="ladder-item">
+                <div>阶梯三</div>
+                <div>自我反思</div>
+            </div>
+            <div class="ladder-item">
+                <div>阶梯四</div>
+                <div>整合超越</div>
+            </div>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🔍 认知模式分析</h3>
+                <p>基于四层思想阶梯框架，深度分析你的浏览行为背后的认知模式。不再是简单的记录，而是洞察你的思维模式。</p>
+                <ul>
+                    <li>客观、精确的分析语言</li>
+                    <li>证据驱动的洞察</li>
+                    <li>犀利的行为点评</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📊 日记对比功能</h3>
+                <p>与前一天的日记进行对比分析，追踪认知模式的变化和进化，实现真正的自我成长。</p>
+                <ul>
+                    <li>行为模式变化追踪</li>
+                    <li>认知升级识别</li>
+                    <li>进步/退步分析</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>📋 新增设置选项</h2>
+        <div class="settings-preview">
+            <h4>📝 日记生成设置</h4>
+            
+            <div style="margin: 15px 0;">
+                <label><strong>自定义日记提示词</strong></label>
+                <textarea style="width: 100%; height: 60px; margin: 5px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="留空使用默认的认知模式分析提示词" readonly></textarea>
+                <small style="color: #666;">留空则使用默认的"认知模式快报"提示词，这是一个专业的行为模式分析引擎。</small>
+            </div>
+
+            <div class="checkbox-demo">
+                <input type="checkbox" id="demoComparison" checked>
+                <label for="demoComparison"><strong>启用日记对比（与前一天的日记进行对比分析）</strong></label>
+            </div>
+            <small style="color: #666; margin-left: 24px; display: block;">开启后，生成日记时会自动对比前一天的日记内容，分析行为模式的变化和进化。</small>
+
+            <div class="checkbox-demo">
+                <input type="checkbox" id="demoStreaming" checked>
+                <label for="demoStreaming"><strong>启用流式传输（实时显示日记生成过程）</strong></label>
+            </div>
+        </div>
+
+        <h2>📈 对比分析演示</h2>
+        
+        <div class="comparison-demo">
+            <div class="demo-header">前一天 - 2025-01-03</div>
+            <div class="demo-content">
+认知模式快报 - 2025-01-03
+
+主导模式：<span class="highlight">规则与角色驱动</span>。大量时间投入工作任务处理和技术学习 (证据: "项目文档", "API接口设计", "代码审查")。
+
+次要模式：本能冲动零星出现。短暂的娱乐内容浏览作为工作间隙的调节 (证据: "短视频", "游戏资讯")。
+
+能量流动：从任务执行向本能冲动的"泄压"模式。工作压力通过娱乐内容释放。
+
+注意力分布：70%规则角色，25%本能冲动，5%自我反思。典型的工作日模式。
+            </div>
+        </div>
+
+        <div class="comparison-demo">
+            <div class="demo-header">今日对比 - 2025-01-04</div>
+            <div class="demo-content">
+认知模式快报 - 2025-01-04
+
+主导模式：<span class="evolution">自我与反思驱动</span>。相比昨日的任务导向，今日更多投入个人成长和深度思考 (证据: "哲学思辨", "自我分析文章", "人生规划")。
+
+<span class="evolution">模式进化</span>：从昨日的"规则-本能"二元模式，跃迁至"反思-整合"的高阶模式。这是一个积极的认知升级信号。
+
+<span class="evolution">行为变化</span>：娱乐时间减少60%，学习深度提升，出现系统性思考迹象 (证据: "深度学习资料", "系统设计思考")。
+
+注意力分布：60%自我反思，30%规则角色，10%整合超越。展现出更高层次的认知模式。
+
+对比洞察：昨日的工作压力"泄压"模式转变为今日的主动"跃迁"模式。从被动应对到主动成长，认知层次明显提升。
+            </div>
+        </div>
+
+        <h2>🎯 核心特性</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🔬 科学分析框架</h3>
+                <p>基于认知科学的四层思想阶梯，从本能冲动到整合超越，全面解析你的认知模式。</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📊 证据驱动洞察</h3>
+                <p>每个分析都有具体的浏览证据支撑，确保洞察的准确性和可信度。</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🎯 犀利点评风格</h3>
+                <p>客观、冷静、精确的分析语言，不回避问题，直击认知盲点。</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📈 进化追踪</h3>
+                <p>通过日记对比功能，追踪认知模式的变化，见证自己的成长轨迹。</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>🚀 开始你的认知进化之旅</h3>
+            <p>在设置中启用"日记对比"功能，体验全新的认知模式分析系统！</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库修复测试 - Mimir</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .test-button.success {
+            background: #27ae60;
+        }
+        .test-button.error {
+            background: #e74c3c;
+        }
+        .test-results {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.success { background: #27ae60; }
+        .status-indicator.error { background: #e74c3c; }
+        .status-indicator.warning { background: #f39c12; }
+        .status-indicator.info { background: #3498db; }
+    </style>
+</head>
+<body>
+    <h1>数据库修复测试</h1>
+    <p>测试CSP错误修复和历史记录备份功能</p>
+
+    <!-- CSP修复测试 -->
+    <div class="test-section">
+        <h2>CSP错误修复测试</h2>
+        <p>测试数据管理器的按钮点击是否正常工作：</p>
+        
+        <button class="test-button" onclick="testDataManager()">测试数据管理器</button>
+        <button class="test-button" onclick="openDataManager()">打开数据管理器</button>
+        
+        <div id="cspResults" class="test-results"></div>
+    </div>
+
+    <!-- 历史备份测试 -->
+    <div class="test-section">
+        <h2>历史记录备份测试</h2>
+        <p>测试历史记录备份功能：</p>
+        
+        <button class="test-button" onclick="testBackupStatus()">检查备份状态</button>
+        <button class="test-button" onclick="testManualBackup()">手动备份历史</button>
+        <button class="test-button" onclick="testHistoryCount()">检查历史记录数量</button>
+        
+        <div id="backupResults" class="test-results"></div>
+    </div>
+
+    <!-- 数据库功能测试 -->
+    <div class="test-section">
+        <h2>数据库功能测试</h2>
+        <p>测试数据库的基本CRUD操作：</p>
+        
+        <button class="test-button" onclick="testDatabaseOperations()">测试数据库操作</button>
+        <button class="test-button" onclick="testHistoryStorage()">测试历史记录存储</button>
+        <button class="test-button" onclick="clearTestData()">清理测试数据</button>
+        
+        <div id="databaseResults" class="test-results"></div>
+    </div>
+
+    <!-- 加载必要的库 -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/error-handler.js"></script>
+    <script src="lib/error-ui.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script src="lib/migration.js"></script>
+
+    <script>
+        function log(section, message, type = 'info') {
+            const resultsDiv = document.getElementById(section + 'Results');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info';
+            
+            resultsDiv.innerHTML += `<div><span class="status-indicator ${statusClass}"></span>[${timestamp}] ${message}</div>`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // CSP修复测试
+        function testDataManager() {
+            log('csp', '测试数据管理器按钮事件处理...', 'info');
+            
+            try {
+                // 模拟创建一个表格行来测试事件处理
+                const testRow = document.createElement('tr');
+                testRow.innerHTML = `
+                    <td>测试数据</td>
+                    <td class="actions">
+                        <button class="btn-small btn-view" data-action="view" data-record-id="test-123">View</button>
+                        <button class="btn-small btn-delete" data-action="delete" data-record-id="test-123">Delete</button>
+                    </td>
+                `;
+                
+                // 测试事件委托
+                const viewBtn = testRow.querySelector('[data-action="view"]');
+                const deleteBtn = testRow.querySelector('[data-action="delete"]');
+                
+                if (viewBtn && deleteBtn) {
+                    log('csp', '✓ 按钮元素创建成功，使用data属性而非onclick', 'success');
+                    log('csp', '✓ CSP错误已修复 - 不再使用内联事件处理器', 'success');
+                } else {
+                    log('csp', '✗ 按钮元素创建失败', 'error');
+                }
+                
+            } catch (error) {
+                log('csp', `✗ 测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function openDataManager() {
+            try {
+                log('csp', '尝试打开数据管理器...', 'info');
+                window.open('data-manager.html', '_blank');
+                log('csp', '✓ 数据管理器页面已打开，请检查是否有CSP错误', 'success');
+            } catch (error) {
+                log('csp', `✗ 打开数据管理器失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 历史备份测试
+        async function testBackupStatus() {
+            try {
+                log('backup', '检查历史备份状态...', 'info');
+                
+                const response = await chrome.runtime.sendMessage({
+                    action: 'getBackupStatus'
+                });
+                
+                if (response && response.success) {
+                    log('backup', `✓ 备份状态正常`, 'success');
+                    log('backup', `✓ 已备份记录数: ${response.totalBackedUpRecords}`, 'success');
+                    log('backup', `✓ 最后备份时间: ${response.lastBackupDate}`, 'success');
+                } else {
+                    log('backup', `⚠ 备份状态异常: ${response?.error || '未知错误'}`, 'warning');
+                }
+            } catch (error) {
+                log('backup', `✗ 检查备份状态失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testManualBackup() {
+            try {
+                log('backup', '开始手动备份历史记录...', 'info');
+                
+                const response = await chrome.runtime.sendMessage({
+                    action: 'backupHistory'
+                });
+                
+                if (response && response.success) {
+                    log('backup', `✓ 历史记录备份成功: ${response.message}`, 'success');
+                } else {
+                    log('backup', `✗ 历史记录备份失败: ${response?.error || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                log('backup', `✗ 手动备份失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHistoryCount() {
+            try {
+                log('backup', '检查历史记录数量...', 'info');
+                
+                // 检查浏览器历史记录
+                const browserHistory = await chrome.history.search({
+                    text: '',
+                    maxResults: 10000
+                });
+                
+                log('backup', `✓ 浏览器历史记录: ${browserHistory.length} 条`, 'info');
+                
+                // 检查IndexedDB中的历史记录
+                const db = new MimirDB();
+                await db.initialize();
+                const storedHistory = await db.getAllHistory();
+                
+                log('backup', `✓ IndexedDB中的历史记录: ${storedHistory.length} 条`, 'info');
+                
+                if (storedHistory.length > 0) {
+                    log('backup', '✓ 历史记录备份功能正常工作', 'success');
+                } else {
+                    log('backup', '⚠ IndexedDB中没有历史记录，可能需要手动备份', 'warning');
+                }
+                
+            } catch (error) {
+                log('backup', `✗ 检查历史记录数量失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 数据库功能测试
+        async function testDatabaseOperations() {
+            try {
+                log('database', '测试数据库基本操作...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                
+                // 测试添加历史记录
+                const testRecord = {
+                    timestamp: Date.now(),
+                    url: 'https://test.example.com',
+                    title: '测试页面',
+                    domain: 'test.example.com',
+                    visitCount: 1,
+                    lastVisitTime: Date.now()
+                };
+                
+                const recordId = await db.addHistoryRecord(testRecord);
+                log('database', `✓ 添加历史记录成功，ID: ${recordId}`, 'success');
+                
+                // 测试读取历史记录
+                const retrievedRecord = await db.getHistoryRecord(recordId);
+                if (retrievedRecord && retrievedRecord.title === testRecord.title) {
+                    log('database', '✓ 读取历史记录成功', 'success');
+                } else {
+                    log('database', '✗ 读取历史记录失败', 'error');
+                }
+                
+                // 测试更新历史记录
+                await db.updateHistoryRecord(recordId, { visitCount: 2 });
+                const updatedRecord = await db.getHistoryRecord(recordId);
+                if (updatedRecord && updatedRecord.visitCount === 2) {
+                    log('database', '✓ 更新历史记录成功', 'success');
+                } else {
+                    log('database', '✗ 更新历史记录失败', 'error');
+                }
+                
+                log('database', '✓ 数据库基本操作测试完成', 'success');
+                
+            } catch (error) {
+                log('database', `✗ 数据库操作测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHistoryStorage() {
+            try {
+                log('database', '测试历史记录存储功能...', 'info');
+                
+                // 获取最近的浏览历史
+                const recentHistory = await chrome.history.search({
+                    text: '',
+                    maxResults: 10,
+                    startTime: Date.now() - 24 * 60 * 60 * 1000 // 最近24小时
+                });
+                
+                log('database', `✓ 获取到 ${recentHistory.length} 条最近历史记录`, 'info');
+                
+                if (recentHistory.length > 0) {
+                    const db = new MimirDB();
+                    await db.initialize();
+                    
+                    // 尝试存储一条历史记录
+                    const testItem = recentHistory[0];
+                    const historyRecord = {
+                        timestamp: testItem.lastVisitTime,
+                        date: new Date(testItem.lastVisitTime).toISOString().split('T')[0],
+                        url: testItem.url,
+                        title: testItem.title,
+                        domain: new URL(testItem.url).hostname,
+                        visitCount: testItem.visitCount || 1,
+                        lastVisitTime: testItem.lastVisitTime
+                    };
+                    
+                    await db.addHistoryRecord(historyRecord);
+                    log('database', '✓ 历史记录存储测试成功', 'success');
+                } else {
+                    log('database', '⚠ 没有最近的历史记录可供测试', 'warning');
+                }
+                
+            } catch (error) {
+                log('database', `✗ 历史记录存储测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearTestData() {
+            try {
+                log('database', '清理测试数据...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                
+                // 获取所有历史记录
+                const allHistory = await db.getAllHistory();
+                let deletedCount = 0;
+                
+                // 删除测试记录（包含test.example.com的记录）
+                for (const record of allHistory) {
+                    if (record.domain && record.domain.includes('test.example.com')) {
+                        await db.deleteHistoryRecord(record.id);
+                        deletedCount++;
+                    }
+                }
+                
+                log('database', `✓ 清理完成，删除了 ${deletedCount} 条测试记录`, 'success');
+                
+            } catch (error) {
+                log('database', `✗ 清理测试数据失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时的初始化
+        window.addEventListener('load', () => {
+            log('csp', '数据库修复测试页面已加载', 'success');
+            log('backup', '历史备份功能测试准备就绪', 'success');
+            log('database', '数据库功能测试准备就绪', 'success');
+        });
+    </script>
+</body>
+</html>

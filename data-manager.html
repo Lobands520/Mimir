@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimir 数据管理器</title>
+    <link rel="icon" type="image/x-icon" href="icon/icon-32x32.ico">
+    <link rel="stylesheet" href="data-manager.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Mimir 数据管理器</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="exportBtn">📤 导出数据</button>
+                <button class="btn btn-secondary" id="migrationBtn">🔄 迁移状态</button>
+                <button class="btn btn-secondary" id="settingsBtn">⚙️ 设置</button>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-store="history">📚 历史记录</button>
+            <button class="tab-btn" data-store="classified_cache">🏷️ 分类缓存</button>
+            <button class="tab-btn" data-store="diaries">📝 日记</button>
+            <button class="tab-btn" data-store="annual_reports">📊 年度报告</button>
+            <button class="tab-btn" data-store="settings">⚙️ 设置</button>
+        </nav>
+
+        <!-- Search and Filter Controls -->
+        <div class="controls">
+            <div class="search-section">
+                <input type="text" id="searchInput" placeholder="🔍 搜索数据..." class="search-input">
+                <select id="filterSelect" class="filter-select">
+                    <option value="">📋 所有记录</option>
+                    <option value="today">📅 今天</option>
+                    <option value="week">📆 本周</option>
+                    <option value="month">🗓️ 本月</option>
+                    <option value="year">📊 今年</option>
+                </select>
+                <select id="sortSelect" class="sort-select">
+                    <option value="date-desc">📅 日期 (最新)</option>
+                    <option value="date-asc">📅 日期 (最旧)</option>
+                    <option value="title-asc">🔤 标题 (A-Z)</option>
+                    <option value="title-desc">🔤 标题 (Z-A)</option>
+                </select>
+            </div>
+            <div class="record-count">
+                <span id="recordCount">0 条记录</span>
+            </div>
+        </div>
+
+        <!-- Data Table Container -->
+        <div class="table-container">
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <span>正在加载数据...</span>
+            </div>
+            
+            <table class="data-table" id="dataTable">
+                <thead id="tableHeader">
+                    <!-- Dynamic headers will be inserted here -->
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Dynamic data rows will be inserted here -->
+                </tbody>
+            </table>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📊</div>
+                <h3>暂无数据</h3>
+                <p>没有找到符合当前筛选条件的记录。</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+            <button class="pagination-btn" id="prevBtn" disabled>
+                <span>‹</span> 上一页
+            </button>
+            <div class="pagination-info">
+                <span id="pageInfo">第 1 页，共 1 页</span>
+            </div>
+            <button class="pagination-btn" id="nextBtn" disabled>
+                下一页 <span>›</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📤 导出数据</h2>
+                <button class="close-btn" id="closeExportModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>📄 格式：</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="json" checked>
+                            <span>JSON</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="csv">
+                            <span>CSV</span>
+                        </label>
+                    </div>
+                    <div class="help-text">JSON 保留完整数据结构。CSV 提供适合电子表格的表格格式。</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>📅 日期范围：</label>
+                    <div class="date-range">
+                        <input type="date" id="startDate" class="date-input">
+                        <span>至</span>
+                        <input type="date" id="endDate" class="date-input">
+                    </div>
+                    <div class="help-text">留空则导出所有数据。日期筛选适用于历史记录、日记、分类缓存和年度报告。</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Object Stores:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="stores" value="history" checked>
+                            <span>History</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="stores" value="classified_cache">
+                            <span>Classified Cache</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="stores" value="diaries" checked>
+                            <span>Diaries</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="stores" value="annual_reports" checked>
+                            <span>Reports</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="stores" value="settings">
+                            <span>Settings</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelExport">Cancel</button>
+                <button class="btn btn-primary" id="confirmExport">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Detail Modal -->
+    <div class="modal" id="recordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="recordModalTitle">Record Details</h2>
+                <button class="close-btn" id="closeRecordModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="recordDetails">
+                    <!-- Dynamic record details will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeRecord">Close</button>
+                <button class="btn btn-danger" id="deleteRecord">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load required libraries -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/error-handler.js"></script>
+    <script src="lib/error-ui.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script src="lib/migration.js"></script>
+    <script src="data-manager.js"></script>
+</body>
+</html>

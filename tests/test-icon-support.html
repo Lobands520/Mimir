@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图标支持测试 - Mimir</title>
+    <link rel="icon" type="image/x-icon" href="../icon/icon-32x32.ico">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .icon-test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .icon-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .icon-display img {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <h1>🎨 Mimir 图标支持测试</h1>
+    
+    <div class="icon-test">
+        <h3>浏览器标签页图标测试</h3>
+        <p>检查浏览器标签页是否显示了Mimir图标</p>
+        <p class="info">如果看到图标，说明favicon配置成功 ✅</p>
+    </div>
+
+    <div class="icon-test">
+        <h3>图标文件可用性测试</h3>
+        <div id="iconTests"></div>
+    </div>
+
+    <div class="icon-test">
+        <h3>扩展图标配置</h3>
+        <p>以下图标已配置在manifest.json中：</p>
+        <ul>
+            <li>16x16 - 扩展管理页面小图标</li>
+            <li>32x32 - 工具栏按钮图标</li>
+            <li>48x48 - 扩展管理页面图标</li>
+            <li>64x64 - Windows系统图标</li>
+            <li>128x128 - Chrome Web Store图标</li>
+            <li>256x256 - 高分辨率显示图标</li>
+        </ul>
+    </div>
+
+    <script>
+        // 测试图标文件是否可以加载
+        const iconSizes = [16, 32, 48, 64, 128, 256];
+        const iconTestsContainer = document.getElementById('iconTests');
+
+        iconSizes.forEach(size => {
+            const iconPath = `../icon/icon-${size}x${size}.ico`;
+            const testDiv = document.createElement('div');
+            testDiv.className = 'icon-display';
+            
+            const img = document.createElement('img');
+            img.src = iconPath;
+            img.width = Math.min(size, 48); // 限制显示大小
+            img.height = Math.min(size, 48);
+            img.alt = `${size}x${size} icon`;
+            
+            const label = document.createElement('span');
+            label.textContent = `${size}x${size} 图标: `;
+            
+            const status = document.createElement('span');
+            
+            img.onload = () => {
+                status.textContent = '✅ 加载成功';
+                status.className = 'success';
+            };
+            
+            img.onerror = () => {
+                status.textContent = '❌ 加载失败';
+                status.className = 'error';
+            };
+            
+            testDiv.appendChild(img);
+            testDiv.appendChild(label);
+            testDiv.appendChild(status);
+            iconTestsContainer.appendChild(testDiv);
+        });
+
+        // 检查原图
+        const originalDiv = document.createElement('div');
+        originalDiv.className = 'icon-display';
+        
+        const originalImg = document.createElement('img');
+        originalImg.src = '../icon/原图.png';
+        originalImg.width = 48;
+        originalImg.height = 48;
+        originalImg.alt = '原图';
+        
+        const originalLabel = document.createElement('span');
+        originalLabel.textContent = '原图 (PNG): ';
+        
+        const originalStatus = document.createElement('span');
+        
+        originalImg.onload = () => {
+            originalStatus.textContent = '✅ 加载成功';
+            originalStatus.className = 'success';
+        };
+        
+        originalImg.onerror = () => {
+            originalStatus.textContent = '❌ 加载失败';
+            originalStatus.className = 'error';
+        };
+        
+        originalDiv.appendChild(originalImg);
+        originalDiv.appendChild(originalLabel);
+        originalDiv.appendChild(originalStatus);
+        iconTestsContainer.appendChild(originalDiv);
+    </script>
+</body>
+</html>

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大量历史记录备份测试 - Mimir</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .test-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .test-button.success {
+            background: #27ae60;
+        }
+        .test-button.warning {
+            background: #f39c12;
+        }
+        .test-button.error {
+            background: #e74c3c;
+        }
+        .test-results {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.success { background: #27ae60; }
+        .status-indicator.error { background: #e74c3c; }
+        .status-indicator.warning { background: #f39c12; }
+        .status-indicator.info { background: #3498db; }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .stat-card {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>大量历史记录备份测试</h1>
+    <p>专门测试处理大量历史记录（如您的10793条）的备份功能</p>
+
+    <!-- 历史记录统计 -->
+    <div class="test-section">
+        <h2>📊 历史记录统计</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="browserHistoryCount">-</div>
+                <div class="stat-label">浏览器历史记录</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="backedUpCount">-</div>
+                <div class="stat-label">已备份记录</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="coveragePercent">-</div>
+                <div class="stat-label">备份覆盖率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="missingCount">-</div>
+                <div class="stat-label">未备份记录</div>
+            </div>
+        </div>
+        
+        <button class="test-button" onclick="checkHistoryStats()">🔍 检查历史记录统计</button>
+        <button class="test-button" onclick="analyzeHistoryGaps()">📈 分析备份缺口</button>
+        
+        <div id="statsResults" class="test-results"></div>
+    </div>
+
+    <!-- 备份功能测试 -->
+    <div class="test-section">
+        <h2>💾 备份功能测试</h2>
+        <p>测试不同类型的备份功能：</p>
+        
+        <div class="progress-bar" style="display: none;" id="backupProgress">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <div id="progressText" style="text-align: center; margin: 10px 0; display: none;"></div>
+        
+        <button class="test-button" onclick="testIncrementalBackup()" id="incrementalBtn">
+            💾 测试增量备份
+        </button>
+        <button class="test-button warning" onclick="testFullBackup()" id="fullBackupBtn">
+            🔄 测试完整备份（慎用）
+        </button>
+        <button class="test-button" onclick="testBackupStatus()">
+            📊 检查备份状态
+        </button>
+        
+        <div id="backupResults" class="test-results"></div>
+    </div>
+
+    <!-- 性能测试 -->
+    <div class="test-section">
+        <h2>⚡ 性能测试</h2>
+        <p>测试大量数据的处理性能：</p>
+        
+        <button class="test-button" onclick="testBatchProcessing()">🚀 测试批量处理性能</button>
+        <button class="test-button" onclick="testDatabaseQuery()">🔍 测试数据库查询性能</button>
+        <button class="test-button" onclick="testMemoryUsage()">💾 测试内存使用情况</button>
+        
+        <div id="performanceResults" class="test-results"></div>
+    </div>
+
+    <!-- 数据验证 -->
+    <div class="test-section">
+        <h2>✅ 数据验证</h2>
+        <p>验证备份数据的完整性和准确性：</p>
+        
+        <button class="test-button" onclick="validateBackupData()">🔍 验证备份数据完整性</button>
+        <button class="test-button" onclick="compareWithBrowser()">📊 与浏览器数据对比</button>
+        <button class="test-button" onclick="checkDataConsistency()">✅ 检查数据一致性</button>
+        
+        <div id="validationResults" class="test-results"></div>
+    </div>
+
+    <!-- 加载必要的库 -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/error-handler.js"></script>
+    <script src="lib/error-ui.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    <script src="lib/db-wrapper.js"></script>
+    <script src="lib/migration.js"></script>
+
+    <script>
+        function log(section, message, type = 'info') {
+            const resultsDiv = document.getElementById(section + 'Results');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info';
+            
+            resultsDiv.innerHTML += `<div><span class="status-indicator ${statusClass}"></span>[${timestamp}] ${message}</div>`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function updateProgress(percent, text) {
+            const progressBar = document.getElementById('backupProgress');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            if (percent > 0) {
+                progressBar.style.display = 'block';
+                progressText.style.display = 'block';
+                progressFill.style.width = percent + '%';
+                progressText.textContent = text || `进度: ${percent}%`;
+            } else {
+                progressBar.style.display = 'none';
+                progressText.style.display = 'none';
+            }
+        }
+
+        // 历史记录统计
+        async function checkHistoryStats() {
+            try {
+                log('stats', '正在检查历史记录统计...', 'info');
+                
+                // 获取浏览器历史记录数量
+                const browserHistory = await chrome.history.search({
+                    text: '',
+                    maxResults: 0
+                });
+                
+                // 获取备份状态
+                const backupStatus = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ action: 'getBackupStatus' }, resolve);
+                });
+                
+                if (backupStatus.success) {
+                    const browserCount = backupStatus.browserHistoryCount;
+                    const backedUpCount = backupStatus.totalBackedUpRecords;
+                    const coverage = backupStatus.backupCoverage;
+                    const missing = browserCount - backedUpCount;
+                    
+                    // 更新统计卡片
+                    document.getElementById('browserHistoryCount').textContent = browserCount.toLocaleString();
+                    document.getElementById('backedUpCount').textContent = backedUpCount.toLocaleString();
+                    document.getElementById('coveragePercent').textContent = coverage + '%';
+                    document.getElementById('missingCount').textContent = Math.max(0, missing).toLocaleString();
+                    
+                    log('stats', `✓ 浏览器历史记录: ${browserCount.toLocaleString()} 条`, 'success');
+                    log('stats', `✓ 已备份记录: ${backedUpCount.toLocaleString()} 条`, 'success');
+                    log('stats', `✓ 备份覆盖率: ${coverage}%`, coverage >= 90 ? 'success' : coverage >= 70 ? 'warning' : 'error');
+                    log('stats', `✓ 未备份记录: ${Math.max(0, missing).toLocaleString()} 条`, missing > 0 ? 'warning' : 'success');
+                    
+                    if (missing > 0) {
+                        log('stats', '⚠ 建议进行完整备份以备份所有历史记录', 'warning');
+                    }
+                } else {
+                    log('stats', `✗ 获取备份状态失败: ${backupStatus.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log('stats', `✗ 检查统计失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function analyzeHistoryGaps() {
+            try {
+                log('stats', '正在分析备份缺口...', 'info');
+                
+                // 获取最近1000条浏览器历史记录进行采样分析
+                const recentHistory = await chrome.history.search({
+                    text: '',
+                    maxResults: 1000
+                });
+                
+                // 获取IndexedDB中的历史记录
+                const db = new MimirDB();
+                await db.initialize();
+                const backedUpHistory = await db.getAllHistory();
+                
+                // 创建备份记录的URL-时间戳映射
+                const backedUpMap = new Set();
+                backedUpHistory.forEach(record => {
+                    backedUpMap.add(`${record.url}-${record.timestamp}`);
+                });
+                
+                // 分析缺口
+                let missingCount = 0;
+                let oldestMissing = null;
+                let newestMissing = null;
+                
+                recentHistory.forEach(item => {
+                    const key = `${item.url}-${item.lastVisitTime}`;
+                    if (!backedUpMap.has(key)) {
+                        missingCount++;
+                        if (!oldestMissing || item.lastVisitTime < oldestMissing) {
+                            oldestMissing = item.lastVisitTime;
+                        }
+                        if (!newestMissing || item.lastVisitTime > newestMissing) {
+                            newestMissing = item.lastVisitTime;
+                        }
+                    }
+                });
+                
+                log('stats', `✓ 采样分析完成（最近1000条记录）`, 'success');
+                log('stats', `✓ 发现缺失记录: ${missingCount} 条`, missingCount > 0 ? 'warning' : 'success');
+                
+                if (missingCount > 0) {
+                    log('stats', `✓ 最早缺失时间: ${new Date(oldestMissing).toLocaleString()}`, 'info');
+                    log('stats', `✓ 最新缺失时间: ${new Date(newestMissing).toLocaleString()}`, 'info');
+                    log('stats', `⚠ 建议进行完整备份以填补缺口`, 'warning');
+                }
+                
+            } catch (error) {
+                log('stats', `✗ 分析缺口失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 备份功能测试
+        async function testIncrementalBackup() {
+            try {
+                const btn = document.getElementById('incrementalBtn');
+                btn.disabled = true;
+                btn.textContent = '💾 增量备份中...';
+                
+                log('backup', '开始增量备份测试...', 'info');
+                updateProgress(10, '正在启动增量备份...');
+                
+                const startTime = Date.now();
+                const result = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ action: 'backupHistory' }, resolve);
+                });
+                
+                const duration = Date.now() - startTime;
+                updateProgress(0);
+                
+                if (result.success) {
+                    log('backup', `✓ 增量备份成功: ${result.message}`, 'success');
+                    log('backup', `✓ 备份耗时: ${(duration/1000).toFixed(2)} 秒`, 'success');
+                    log('backup', `✓ 处理记录: ${result.totalRecords} 条`, 'info');
+                    log('backup', `✓ 新增备份: ${result.backedUpRecords} 条`, 'success');
+                    
+                    // 刷新统计
+                    await checkHistoryStats();
+                } else {
+                    log('backup', `✗ 增量备份失败: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log('backup', `✗ 增量备份测试失败: ${error.message}`, 'error');
+                updateProgress(0);
+            } finally {
+                const btn = document.getElementById('incrementalBtn');
+                btn.disabled = false;
+                btn.textContent = '💾 测试增量备份';
+            }
+        }
+
+        async function testFullBackup() {
+            const confirmed = confirm('警告：完整备份将处理所有历史记录！\n\n对于大量记录（如10000+条），这可能需要10-20分钟时间。\n确定要继续吗？');
+            if (!confirmed) return;
+            
+            try {
+                const btn = document.getElementById('fullBackupBtn');
+                btn.disabled = true;
+                btn.textContent = '🔄 完整备份中...';
+                
+                log('backup', '开始完整备份测试（请耐心等待）...', 'warning');
+                updateProgress(5, '正在启动完整备份...');
+                
+                const startTime = Date.now();
+                
+                // 模拟进度更新
+                const progressInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const estimatedTotal = 600000; // 预估10分钟
+                    const progress = Math.min(90, (elapsed / estimatedTotal) * 100);
+                    updateProgress(progress, `完整备份进行中... ${Math.round(progress)}%`);
+                }, 2000);
+                
+                const result = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ action: 'fullBackupHistory' }, resolve);
+                });
+                
+                clearInterval(progressInterval);
+                const duration = Date.now() - startTime;
+                updateProgress(100, '完整备份完成！');
+                
+                setTimeout(() => updateProgress(0), 3000);
+                
+                if (result.success) {
+                    log('backup', `✓ 完整备份成功: ${result.message}`, 'success');
+                    log('backup', `✓ 备份耗时: ${(duration/1000/60).toFixed(2)} 分钟`, 'success');
+                    log('backup', `✓ 处理记录: ${result.totalRecords} 条`, 'info');
+                    log('backup', `✓ 新增备份: ${result.backedUpRecords} 条`, 'success');
+                    log('backup', `✓ 跳过重复: ${result.skippedRecords} 条`, 'info');
+                    
+                    // 刷新统计
+                    await checkHistoryStats();
+                } else {
+                    log('backup', `✗ 完整备份失败: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log('backup', `✗ 完整备份测试失败: ${error.message}`, 'error');
+                updateProgress(0);
+            } finally {
+                const btn = document.getElementById('fullBackupBtn');
+                btn.disabled = false;
+                btn.textContent = '🔄 测试完整备份（慎用）';
+            }
+        }
+
+        async function testBackupStatus() {
+            try {
+                log('backup', '检查详细备份状态...', 'info');
+                
+                const status = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ action: 'getBackupStatus' }, resolve);
+                });
+                
+                if (status.success) {
+                    log('backup', `✓ 备份状态: 正常`, 'success');
+                    log('backup', `✓ 最后备份: ${status.lastBackupDate}`, 'info');
+                    log('backup', `✓ 备份记录数: ${status.totalBackedUpRecords.toLocaleString()}`, 'success');
+                    log('backup', `✓ 浏览器记录数: ${status.browserHistoryCount.toLocaleString()}`, 'info');
+                    log('backup', `✓ 备份覆盖率: ${status.backupCoverage}%`, 'success');
+                    
+                    if (status.needsFullBackup) {
+                        log('backup', '⚠ 建议进行完整备份', 'warning');
+                    }
+                    
+                    if (status.lastBackupStats) {
+                        const stats = status.lastBackupStats;
+                        log('backup', `✓ 上次备份统计: 处理${stats.totalProcessed}条，成功${stats.successCount}条，跳过${stats.skippedCount}条`, 'info');
+                    }
+                } else {
+                    log('backup', `✗ 获取备份状态失败: ${status.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log('backup', `✗ 检查备份状态失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 性能测试
+        async function testBatchProcessing() {
+            try {
+                log('performance', '测试批量处理性能...', 'info');
+                
+                const startTime = Date.now();
+                
+                // 获取1000条历史记录进行性能测试
+                const testHistory = await chrome.history.search({
+                    text: '',
+                    maxResults: 1000
+                });
+                
+                const fetchTime = Date.now() - startTime;
+                log('performance', `✓ 获取1000条记录耗时: ${fetchTime}ms`, 'success');
+                
+                // 测试数据处理性能
+                const processStart = Date.now();
+                let processedCount = 0;
+                
+                for (const item of testHistory) {
+                    // 模拟数据处理
+                    const processed = {
+                        timestamp: item.lastVisitTime,
+                        date: new Date(item.lastVisitTime).toISOString().split('T')[0],
+                        url: item.url,
+                        title: item.title,
+                        domain: new URL(item.url).hostname,
+                        visitCount: item.visitCount || 1
+                    };
+                    processedCount++;
+                }
+                
+                const processTime = Date.now() - processStart;
+                log('performance', `✓ 处理${processedCount}条记录耗时: ${processTime}ms`, 'success');
+                log('performance', `✓ 平均处理速度: ${(processedCount/processTime*1000).toFixed(0)} 条/秒`, 'success');
+                
+                // 估算完整备份时间
+                const estimatedFullTime = (processTime / 1000) * (10793 / 1000);
+                log('performance', `✓ 预估处理10793条记录需要: ${estimatedFullTime.toFixed(1)} 秒`, 'info');
+                
+            } catch (error) {
+                log('performance', `✗ 性能测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabaseQuery() {
+            try {
+                log('performance', '测试数据库查询性能...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                
+                // 测试查询所有记录
+                const queryStart = Date.now();
+                const allRecords = await db.getAllHistory();
+                const queryTime = Date.now() - queryStart;
+                
+                log('performance', `✓ 查询${allRecords.length}条记录耗时: ${queryTime}ms`, 'success');
+                
+                if (allRecords.length > 0) {
+                    // 测试按日期范围查询
+                    const rangeStart = Date.now();
+                    const today = new Date().toISOString().split('T')[0];
+                    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+                    
+                    const rangeRecords = await db.getHistoryByDateRange(weekAgo, today);
+                    const rangeTime = Date.now() - rangeStart;
+                    
+                    log('performance', `✓ 按日期范围查询${rangeRecords.length}条记录耗时: ${rangeTime}ms`, 'success');
+                }
+                
+            } catch (error) {
+                log('performance', `✗ 数据库查询测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMemoryUsage() {
+            try {
+                log('performance', '测试内存使用情况...', 'info');
+                
+                if (performance.memory) {
+                    const memory = performance.memory;
+                    log('performance', `✓ 已使用内存: ${(memory.usedJSHeapSize/1024/1024).toFixed(2)} MB`, 'info');
+                    log('performance', `✓ 总分配内存: ${(memory.totalJSHeapSize/1024/1024).toFixed(2)} MB`, 'info');
+                    log('performance', `✓ 内存限制: ${(memory.jsHeapSizeLimit/1024/1024).toFixed(2)} MB`, 'info');
+                    
+                    const usagePercent = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
+                    log('performance', `✓ 内存使用率: ${usagePercent.toFixed(1)}%`, usagePercent > 80 ? 'warning' : 'success');
+                } else {
+                    log('performance', '⚠ 浏览器不支持内存监控API', 'warning');
+                }
+                
+            } catch (error) {
+                log('performance', `✗ 内存测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 数据验证
+        async function validateBackupData() {
+            try {
+                log('validation', '验证备份数据完整性...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                const backedUpRecords = await db.getAllHistory();
+                
+                log('validation', `✓ 找到 ${backedUpRecords.length} 条备份记录`, 'success');
+                
+                // 验证数据结构
+                let validCount = 0;
+                let invalidCount = 0;
+                
+                for (const record of backedUpRecords.slice(0, 100)) { // 验证前100条
+                    if (record.url && record.title && record.timestamp && record.domain) {
+                        validCount++;
+                    } else {
+                        invalidCount++;
+                    }
+                }
+                
+                log('validation', `✓ 数据结构验证: ${validCount} 条有效，${invalidCount} 条无效`, invalidCount > 0 ? 'warning' : 'success');
+                
+                // 验证时间戳
+                const sortedRecords = backedUpRecords.sort((a, b) => b.timestamp - a.timestamp);
+                if (sortedRecords.length > 0) {
+                    const newest = new Date(sortedRecords[0].timestamp);
+                    const oldest = new Date(sortedRecords[sortedRecords.length - 1].timestamp);
+                    
+                    log('validation', `✓ 时间范围: ${oldest.toLocaleDateString()} 到 ${newest.toLocaleDateString()}`, 'success');
+                }
+                
+            } catch (error) {
+                log('validation', `✗ 数据验证失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function compareWithBrowser() {
+            try {
+                log('validation', '与浏览器数据对比...', 'info');
+                
+                // 获取最近100条浏览器记录进行对比
+                const browserRecords = await chrome.history.search({
+                    text: '',
+                    maxResults: 100
+                });
+                
+                const db = new MimirDB();
+                await db.initialize();
+                const backedUpRecords = await db.getAllHistory();
+                
+                // 创建备份记录映射
+                const backupMap = new Map();
+                backedUpRecords.forEach(record => {
+                    backupMap.set(`${record.url}-${record.timestamp}`, record);
+                });
+                
+                let matchCount = 0;
+                let mismatchCount = 0;
+                
+                for (const browserRecord of browserRecords) {
+                    const key = `${browserRecord.url}-${browserRecord.lastVisitTime}`;
+                    if (backupMap.has(key)) {
+                        matchCount++;
+                    } else {
+                        mismatchCount++;
+                    }
+                }
+                
+                log('validation', `✓ 对比结果: ${matchCount} 条匹配，${mismatchCount} 条不匹配`, 'success');
+                log('validation', `✓ 匹配率: ${(matchCount/(matchCount+mismatchCount)*100).toFixed(1)}%`, 'success');
+                
+            } catch (error) {
+                log('validation', `✗ 数据对比失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkDataConsistency() {
+            try {
+                log('validation', '检查数据一致性...', 'info');
+                
+                const db = new MimirDB();
+                await db.initialize();
+                const records = await db.getAllHistory();
+                
+                // 检查重复记录
+                const urlTimestampSet = new Set();
+                let duplicateCount = 0;
+                
+                records.forEach(record => {
+                    const key = `${record.url}-${record.timestamp}`;
+                    if (urlTimestampSet.has(key)) {
+                        duplicateCount++;
+                    } else {
+                        urlTimestampSet.add(key);
+                    }
+                });
+                
+                log('validation', `✓ 重复记录检查: 发现 ${duplicateCount} 条重复记录`, duplicateCount > 0 ? 'warning' : 'success');
+                
+                // 检查数据完整性
+                let incompleteCount = 0;
+                records.slice(0, 1000).forEach(record => { // 检查前1000条
+                    if (!record.url || !record.title || !record.timestamp) {
+                        incompleteCount++;
+                    }
+                });
+                
+                log('validation', `✓ 数据完整性检查: 发现 ${incompleteCount} 条不完整记录`, incompleteCount > 0 ? 'warning' : 'success');
+                
+            } catch (error) {
+                log('validation', `✗ 一致性检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            log('stats', '大量历史记录备份测试页面已加载', 'success');
+            log('backup', '备份功能测试准备就绪', 'success');
+            log('performance', '性能测试准备就绪', 'success');
+            log('validation', '数据验证测试准备就绪', 'success');
+            
+            // 自动检查统计
+            checkHistoryStats();
+        });
+    </script>
+</body>
+</html>

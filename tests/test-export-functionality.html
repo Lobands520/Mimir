@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Export Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Export Functionality Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Setup</h2>
+        <button onclick="setupTestData()">Setup Test Data</button>
+        <button onclick="clearTestData()">Clear Test Data</button>
+        <div id="setupResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>JSON Export Tests</h2>
+        <button onclick="testJSONExport()">Test JSON Export</button>
+        <button onclick="testJSONExportWithDateRange()">Test JSON Export with Date Range</button>
+        <div id="jsonResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>CSV Export Tests</h2>
+        <button onclick="testCSVExport()">Test CSV Export</button>
+        <button onclick="testCSVExportWithDateRange()">Test CSV Export with Date Range</button>
+        <div id="csvResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Export Data Collection Tests</h2>
+        <button onclick="testDataCollection()">Test Data Collection</button>
+        <button onclick="testDateFiltering()">Test Date Filtering</button>
+        <div id="collectionResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="testLog" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <!-- Load required libraries -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+    
+    <script>
+        let testDB;
+        let testManager;
+
+        // Mock DataManagerUI class for testing
+        class TestDataManager {
+            constructor() {
+                this.db = new MimirDB();
+            }
+
+            async initialize() {
+                await this.db.initialize();
+            }
+
+            // Copy export methods from DataManagerUI
+            async collectExportData(selectedStores, startDate, endDate) {
+                const exportData = {};
+                
+                for (const storeName of selectedStores) {
+                    try {
+                        let storeData = [];
+                        
+                        switch (storeName) {
+                            case 'history':
+                                if (startDate && endDate) {
+                                    const startTimestamp = new Date(startDate).getTime();
+                                    const endTimestamp = new Date(endDate + 'T23:59:59').getTime();
+                                    storeData = await this.db.getHistoryByTimestampRange(startTimestamp, endTimestamp);
+                                } else {
+                                    storeData = await this.db.getAllHistory();
+                                }
+                                break;
+                                
+                            case 'classified_cache':
+                                if (startDate && endDate) {
+                                    storeData = await this.db.getClassifiedDataByDateRange(startDate, endDate);
+                                } else {
+                                    storeData = await this.db.getAllClassifiedData();
+                                }
+                                break;
+                                
+                            case 'diaries':
+                                if (startDate && endDate) {
+                                    storeData = await this.db.getDiariesByDateRange(startDate, endDate);
+                                } else {
+                                    storeData = await this.db.getAllDiaries();
+                                }
+                                break;
+                                
+                            case 'annual_reports':
+                                if (startDate && endDate) {
+                                    const startYear = new Date(startDate).getFullYear();
+                                    const endYear = new Date(endDate).getFullYear();
+                                    storeData = await this.db.getAnnualReportsByYearRange(startYear, endYear);
+                                } else {
+                                    storeData = await this.db.getAllAnnualReports();
+                                }
+                                break;
+                                
+                            case 'settings':
+                                storeData = await this.db.getAllSettings();
+                                break;
+                                
+                            default:
+                                console.warn(`Unknown store: ${storeName}`);
+                                continue;
+                        }
+                        
+                        exportData[storeName] = storeData;
+                        log(`Collected ${storeData.length} records from ${storeName}`);
+                        
+                    } catch (error) {
+                        console.error(`Failed to collect data from ${storeName}:`, error);
+                        exportData[storeName] = [];
+                    }
+                }
+                
+                return exportData;
+            }
+
+            generateJSONExport(exportData, startDate, endDate) {
+                const exportObject = {
+                    metadata: {
+                        exportDate: new Date().toISOString(),
+                        dateRange: {
+                            start: startDate || null,
+                            end: endDate || null
+                        },
+                        stores: Object.keys(exportData),
+                        totalRecords: Object.values(exportData).reduce((sum, records) => sum + records.length, 0)
+                    },
+                    data: exportData
+                };
+                
+                const content = JSON.stringify(exportObject, null, 2);
+                const dateStr = new Date().toISOString().split('T')[0];
+                const fileName = `mimir-export-${dateStr}.json`;
+                
+                return { content, fileName };
+            }
+
+            generateCSVExport(exportData, startDate, endDate) {
+                let csvContent = '';
+                const dateStr = new Date().toISOString().split('T')[0];
+                
+                if (Object.keys(exportData).length > 1) {
+                    csvContent += `# Mimir Data Export - ${dateStr}\n`;
+                    csvContent += `# Date Range: ${startDate || 'All'} to ${endDate || 'All'}\n\n`;
+                    
+                    for (const [storeName, records] of Object.entries(exportData)) {
+                        if (records.length === 0) continue;
+                        
+                        csvContent += `## ${storeName.toUpperCase()} (${records.length} records)\n`;
+                        csvContent += this.generateCSVForStore(storeName, records);
+                        csvContent += '\n';
+                    }
+                    
+                    const fileName = `mimir-export-${dateStr}.csv`;
+                    return { content: csvContent, fileName };
+                } else {
+                    const storeName = Object.keys(exportData)[0];
+                    const records = exportData[storeName];
+                    
+                    csvContent = this.generateCSVForStore(storeName, records);
+                    const fileName = `mimir-${storeName}-${dateStr}.csv`;
+                    return { content: csvContent, fileName };
+                }
+            }
+
+            generateCSVForStore(storeName, records) {
+                if (records.length === 0) {
+                    return 'No data available\n';
+                }
+                
+                let csvContent = '';
+                
+                switch (storeName) {
+                    case 'history':
+                        csvContent += 'ID,Date,Timestamp,Title,URL,Domain,Visit Count,Last Visit Time\n';
+                        records.forEach(record => {
+                            csvContent += [
+                                record.id || '',
+                                record.date || '',
+                                record.timestamp || '',
+                                this.escapeCSV(record.title || ''),
+                                this.escapeCSV(record.url || ''),
+                                record.domain || '',
+                                record.visitCount || 0,
+                                record.lastVisitTime || ''
+                            ].join(',') + '\n';
+                        });
+                        break;
+                        
+                    case 'classified_cache':
+                        csvContent += 'Date,Created At,Version,Data Size,Data Preview\n';
+                        records.forEach(record => {
+                            const dataPreview = JSON.stringify(record.data).substring(0, 100) + '...';
+                            csvContent += [
+                                record.date || '',
+                                new Date(record.createdAt).toISOString(),
+                                record.version || '',
+                                JSON.stringify(record.data).length,
+                                this.escapeCSV(dataPreview)
+                            ].join(',') + '\n';
+                        });
+                        break;
+                        
+                    case 'diaries':
+                        csvContent += 'Date,Title,Word Count,Created At,Updated At,Content Preview,Tags\n';
+                        records.forEach(record => {
+                            const contentPreview = (record.content || '').substring(0, 100) + '...';
+                            const tags = (record.tags || []).join('; ');
+                            csvContent += [
+                                record.date || '',
+                                this.escapeCSV(record.title || ''),
+                                record.wordCount || 0,
+                                new Date(record.createdAt).toISOString(),
+                                new Date(record.updatedAt).toISOString(),
+                                this.escapeCSV(contentPreview),
+                                this.escapeCSV(tags)
+                            ].join(',') + '\n';
+                        });
+                        break;
+                        
+                    case 'annual_reports':
+                        csvContent += 'Year,Generated At,Version,Summary Preview\n';
+                        records.forEach(record => {
+                            const summaryPreview = JSON.stringify(record.summary || {}).substring(0, 100) + '...';
+                            csvContent += [
+                                record.year || '',
+                                new Date(record.generatedAt).toISOString(),
+                                record.version || '',
+                                this.escapeCSV(summaryPreview)
+                            ].join(',') + '\n';
+                        });
+                        break;
+                        
+                    case 'settings':
+                        csvContent += 'Key,Category,Updated At,Value Type,Value Preview\n';
+                        records.forEach(record => {
+                            const valueType = typeof record.value;
+                            const valuePreview = valueType === 'object' 
+                                ? JSON.stringify(record.value).substring(0, 50) + '...'
+                                : String(record.value).substring(0, 50);
+                            csvContent += [
+                                record.key || '',
+                                record.category || '',
+                                new Date(record.updatedAt).toISOString(),
+                                valueType,
+                                this.escapeCSV(valuePreview)
+                            ].join(',') + '\n';
+                        });
+                        break;
+                        
+                    default:
+                        csvContent += 'Data\n';
+                        records.forEach(record => {
+                            csvContent += this.escapeCSV(JSON.stringify(record)) + '\n';
+                        });
+                }
+                
+                return csvContent;
+            }
+
+            escapeCSV(value) {
+                if (value === null || value === undefined) return '';
+                const str = String(value);
+                if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            }
+        }
+
+        function log(message) {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('testLog').innerHTML = '';
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        async function setupTestData() {
+            try {
+                log('Setting up test data...');
+                
+                if (!testManager) {
+                    testManager = new TestDataManager();
+                    await testManager.initialize();
+                }
+
+                // Add test history records
+                const historyRecords = [
+                    {
+                        timestamp: Date.now() - 86400000, // 1 day ago
+                        url: 'https://example.com',
+                        title: 'Example Site',
+                        domain: 'example.com'
+                    },
+                    {
+                        timestamp: Date.now() - 172800000, // 2 days ago
+                        url: 'https://test.com',
+                        title: 'Test Site',
+                        domain: 'test.com'
+                    }
+                ];
+
+                for (const record of historyRecords) {
+                    await testManager.db.addHistoryRecord(record);
+                }
+
+                // Add test diary
+                await testManager.db.saveDiary('2024-01-01', 'Test diary content for export testing', 'Test Diary');
+
+                // Add test classified data
+                await testManager.db.saveClassifiedData('2024-01-01', { 
+                    categories: ['work', 'personal'], 
+                    summary: 'Test classified data' 
+                });
+
+                // Add test annual report
+                await testManager.db.saveAnnualReport(2024, {
+                    totalVisits: 1000,
+                    topDomains: ['example.com', 'test.com'],
+                    summary: { visits: 1000, domains: 2 }
+                });
+
+                // Add test settings
+                await testManager.db.saveSetting('theme', 'dark', 'ui');
+                await testManager.db.saveSetting('exportFormat', 'json', 'export');
+
+                log('Test data setup completed');
+                showResult('setupResult', 'Test data setup completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`Setup failed: ${error.message}`);
+                showResult('setupResult', `Setup failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearTestData() {
+            try {
+                log('Clearing test data...');
+                
+                if (testManager && testManager.db) {
+                    testManager.db.close();
+                }
+                
+                // Delete the database
+                await new Promise((resolve, reject) => {
+                    const deleteReq = indexedDB.deleteDatabase('MimirDB');
+                    deleteReq.onsuccess = () => resolve();
+                    deleteReq.onerror = () => reject(deleteReq.error);
+                });
+
+                testManager = null;
+                log('Test data cleared');
+                showResult('setupResult', 'Test data cleared successfully!', 'success');
+                
+            } catch (error) {
+                log(`Clear failed: ${error.message}`);
+                showResult('setupResult', `Clear failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testJSONExport() {
+            try {
+                log('Testing JSON export...');
+                
+                if (!testManager) {
+                    await setupTestData();
+                }
+
+                const selectedStores = ['history', 'diaries', 'classified_cache', 'annual_reports', 'settings'];
+                const exportData = await testManager.collectExportData(selectedStores);
+                const result = testManager.generateJSONExport(exportData);
+
+                // Validate JSON structure
+                const parsed = JSON.parse(result.content);
+                
+                if (!parsed.metadata || !parsed.data) {
+                    throw new Error('Invalid JSON export structure');
+                }
+
+                if (!parsed.metadata.exportDate || !parsed.metadata.stores) {
+                    throw new Error('Missing metadata in JSON export');
+                }
+
+                log(`JSON export generated: ${result.fileName} (${result.content.length} chars)`);
+                log(`Metadata: ${JSON.stringify(parsed.metadata, null, 2)}`);
+                
+                showResult('jsonResult', `JSON export test passed! Generated ${result.fileName} with ${parsed.metadata.totalRecords} total records.`, 'success');
+                
+            } catch (error) {
+                log(`JSON export test failed: ${error.message}`);
+                showResult('jsonResult', `JSON export test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testJSONExportWithDateRange() {
+            try {
+                log('Testing JSON export with date range...');
+                
+                if (!testManager) {
+                    await setupTestData();
+                }
+
+                const selectedStores = ['history', 'diaries'];
+                const startDate = '2024-01-01';
+                const endDate = '2024-01-31';
+                
+                const exportData = await testManager.collectExportData(selectedStores, startDate, endDate);
+                const result = testManager.generateJSONExport(exportData, startDate, endDate);
+
+                const parsed = JSON.parse(result.content);
+                
+                if (parsed.metadata.dateRange.start !== startDate || parsed.metadata.dateRange.end !== endDate) {
+                    throw new Error('Date range not properly set in metadata');
+                }
+
+                log(`JSON export with date range generated: ${result.fileName}`);
+                showResult('jsonResult', `JSON export with date range test passed! Date range: ${startDate} to ${endDate}`, 'success');
+                
+            } catch (error) {
+                log(`JSON export with date range test failed: ${error.message}`);
+                showResult('jsonResult', `JSON export with date range test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCSVExport() {
+            try {
+                log('Testing CSV export...');
+                
+                if (!testManager) {
+                    await setupTestData();
+                }
+
+                const selectedStores = ['history'];
+                const exportData = await testManager.collectExportData(selectedStores);
+                const result = testManager.generateCSVExport(exportData);
+
+                // Validate CSV structure
+                const lines = result.content.split('\n');
+                if (lines.length < 2) {
+                    throw new Error('CSV should have at least header and one data row');
+                }
+
+                const header = lines[0];
+                if (!header.includes('ID,Date,Timestamp,Title,URL,Domain')) {
+                    throw new Error('CSV header is incorrect for history data');
+                }
+
+                log(`CSV export generated: ${result.fileName} (${lines.length} lines)`);
+                log(`Header: ${header}`);
+                
+                showResult('csvResult', `CSV export test passed! Generated ${result.fileName} with ${lines.length - 1} data rows.`, 'success');
+                
+            } catch (error) {
+                log(`CSV export test failed: ${error.message}`);
+                showResult('csvResult', `CSV export test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCSVExportWithDateRange() {
+            try {
+                log('Testing CSV export with date range...');
+                
+                if (!testManager) {
+                    await setupTestData();
+                }
+
+                const selectedStores = ['history', 'diaries'];
+                const startDate = '2024-01-01';
+                const endDate = '2024-01-31';
+                
+                const exportData = await testManager.collectExportData(selectedStores, startDate, endDate);
+                const result = testManager.generateCSVExport(exportData, startDate, endDate);
+
+                // Should be multi-store CSV with sections
+                if (!result.content.includes('# Mimir Data Export')) {
+                    throw new Error('Multi-store CSV should have header comment');
+                }
+
+                if (!result.content.includes(`# Date Range: ${startDate} to ${endDate}`)) {
+                    throw new Error('Date range not included in CSV header');
+                }
+
+                log(`Multi-store CSV export generated: ${result.fileName}`);
+                showResult('csvResult', `CSV export with date range test passed! Multi-store format with date range.`, 'success');
+                
+            } catch (error) {
+                log(`CSV export with date range test failed: ${error.message}`);
+                showResult('csvResult', `CSV export with date range test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDataCollection() {
+            try {
+                log('Testing data collection...');
+                
+                if (!testManager) {
+                    await setupTestData();
+                }
+
+                const selectedStores = ['history', 'diaries', 'classified_cache', 'annual_reports', 'settings'];
+                const exportData = await testManager.collectExportData(selectedStores);
+
+                // Validate that all stores have data
+                for (const store of selectedStores) {
+                    if (!exportData[store]) {
+                        throw new Error(`Missing data for store: ${store}`);
+                    }
+                    log(`${store}: ${exportData[store].length} records`);
+                }
+
+                const totalRecords = Object.values(exportData).reduce((sum, records) => sum + records.length, 0);
+                
+                showResult('collectionResult', `Data collection test passed! Collected ${totalRecords} total records from ${selectedStores.length} stores.`, 'success');
+                
+            } catch (error) {
+                log(`Data collection test failed: ${error.message}`);
+                showResult('collectionResult', `Data collection test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDateFiltering() {
+            try {
+                log('Testing date filtering...');
+                
+                if (!testManager) {
+                    await setupTestData();
+                }
+
+                // Test with a date range that should include our test data
+                const selectedStores = ['diaries', 'classified_cache'];
+                const startDate = '2024-01-01';
+                const endDate = '2024-01-31';
+                
+                const exportData = await testManager.collectExportData(selectedStores, startDate, endDate);
+
+                // Should have data for diaries and classified_cache
+                if (exportData.diaries.length === 0) {
+                    throw new Error('Date filtering failed - no diary data found in range');
+                }
+
+                if (exportData.classified_cache.length === 0) {
+                    throw new Error('Date filtering failed - no classified data found in range');
+                }
+
+                log(`Date filtering successful: diaries=${exportData.diaries.length}, classified=${exportData.classified_cache.length}`);
+                
+                // Test with a date range that should exclude our test data
+                const futureStartDate = '2025-01-01';
+                const futureEndDate = '2025-01-31';
+                
+                const futureExportData = await testManager.collectExportData(selectedStores, futureStartDate, futureEndDate);
+
+                if (futureExportData.diaries.length > 0 || futureExportData.classified_cache.length > 0) {
+                    throw new Error('Date filtering failed - found data outside expected range');
+                }
+
+                log('Future date range correctly returned no data');
+                
+                showResult('collectionResult', `Date filtering test passed! Correctly filtered data by date ranges.`, 'success');
+                
+            } catch (error) {
+                log(`Date filtering test failed: ${error.message}`);
+                showResult('collectionResult', `Date filtering test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Export functionality test page loaded');
+        });
+    </script>
+</body>
+</html>

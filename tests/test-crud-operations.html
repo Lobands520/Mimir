@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CRUD Operations - MimirDB</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007cba;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MimirDB CRUD Operations Test</h1>
+        <p>This page tests all CRUD operations for the IndexedDB implementation.</p>
+        
+        <div id="status" class="result">Initializing database...</div>
+        
+        <div class="test-section">
+            <h3>Database Info</h3>
+            <button onclick="testDatabaseInfo()">Get Database Info</button>
+            <button onclick="testDataStatistics()">Get Statistics</button>
+            <button onclick="testValidateIntegrity()">Validate Integrity</button>
+            <div id="info-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>History Object Store Tests</h3>
+            <button onclick="testHistoryCreate()">Create History Record</button>
+            <button onclick="testHistoryRead()">Read History Records</button>
+            <button onclick="testHistoryUpdate()">Update History Record</button>
+            <button onclick="testHistoryDelete()">Delete History Record</button>
+            <button onclick="testHistoryDateRange()">Query by Date Range</button>
+            <button onclick="testHistoryDomain()">Query by Domain</button>
+            <div id="history-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Classified Cache Tests</h3>
+            <button onclick="testClassifiedCreate()">Save Classified Data</button>
+            <button onclick="testClassifiedRead()">Read Classified Data</button>
+            <button onclick="testClassifiedDelete()">Delete Classified Data</button>
+            <button onclick="testClassifiedDateRange()">Query by Date Range</button>
+            <div id="classified-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Diaries Tests</h3>
+            <button onclick="testDiaryCreate()">Save Diary</button>
+            <button onclick="testDiaryRead()">Read Diary</button>
+            <button onclick="testDiaryUpdate()">Update Diary Tags</button>
+            <button onclick="testDiaryDelete()">Delete Diary</button>
+            <button onclick="testDiaryDateRange()">Query by Date Range</button>
+            <div id="diary-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Annual Reports Tests</h3>
+            <button onclick="testReportCreate()">Save Annual Report</button>
+            <button onclick="testReportRead()">Read Annual Report</button>
+            <button onclick="testReportDelete()">Delete Annual Report</button>
+            <button onclick="testReportYearRange()">Query by Year Range</button>
+            <div id="report-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Settings Tests</h3>
+            <button onclick="testSettingCreate()">Save Setting</button>
+            <button onclick="testSettingRead()">Read Setting</button>
+            <button onclick="testSettingDelete()">Delete Setting</button>
+            <button onclick="testSettingCategory()">Query by Category</button>
+            <div id="setting-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Advanced Query Tests</h3>
+            <button onclick="testSearchAll()">Search All Stores</button>
+            <button onclick="testBulkOperations()">Bulk Operations</button>
+            <button onclick="testExportData()">Export Data</button>
+            <div id="advanced-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Database Statistics</h3>
+            <div id="stats-container" class="stats"></div>
+        </div>
+    </div>
+
+    <!-- Load dependencies -->
+    <script src="lib/idb.js"></script>
+    <script src="lib/mimir-db.js"></script>
+
+    <script>
+        let db;
+        let testHistoryId;
+        
+        // Initialize database
+        async function initializeDatabase() {
+            try {
+                db = new MimirDB();
+                await db.initialize();
+                document.getElementById('status').innerHTML = '<span class="success">✓ Database initialized successfully</span>';
+                console.log('Database initialized');
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<span class="error">✗ Failed to initialize database: ${error.message}</span>`;
+                console.error('Database initialization failed:', error);
+            }
+        }
+
+        // Utility function to display results
+        function displayResult(elementId, result, isError = false) {
+            const element = document.getElementById(elementId);
+            const className = isError ? 'error' : 'success';
+            const icon = isError ? '✗' : '✓';
+            element.innerHTML = `<span class="${className}">${icon} ${typeof result === 'object' ? JSON.stringify(result, null, 2) : result}</span>`;
+        }
+
+        // Database Info Tests
+        async function testDatabaseInfo() {
+            try {
+                const info = await db.getInfo();
+                displayResult('info-result', info);
+            } catch (error) {
+                displayResult('info-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testDataStatistics() {
+            try {
+                const stats = await db.getDataStatistics();
+                displayResult('info-result', stats);
+                updateStatsDisplay(stats);
+            } catch (error) {
+                displayResult('info-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testValidateIntegrity() {
+            try {
+                const validation = await db.validateDatabaseIntegrity();
+                displayResult('info-result', validation);
+            } catch (error) {
+                displayResult('info-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        function updateStatsDisplay(stats) {
+            const container = document.getElementById('stats-container');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.history.count}</div>
+                    <div>History Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.diaries.count}</div>
+                    <div>Diary Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.classifiedCache.count}</div>
+                    <div>Classified Cache</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.annualReports.count}</div>
+                    <div>Annual Reports</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.settings.count}</div>
+                    <div>Settings</div>
+                </div>
+            `;
+        }
+
+        // History Tests
+        async function testHistoryCreate() {
+            try {
+                const record = {
+                    timestamp: Date.now(),
+                    url: 'https://github.com/test',
+                    title: 'Test GitHub Page',
+                    domain: 'github.com',
+                    visitCount: 1
+                };
+                testHistoryId = await db.addHistoryRecord(record);
+                displayResult('history-result', `Created history record with ID: ${testHistoryId}`);
+            } catch (error) {
+                displayResult('history-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testHistoryRead() {
+            try {
+                if (!testHistoryId) {
+                    throw new Error('No history record created yet. Run Create test first.');
+                }
+                const record = await db.getHistoryRecord(testHistoryId);
+                displayResult('history-result', record);
+            } catch (error) {
+                displayResult('history-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testHistoryUpdate() {
+            try {
+                if (!testHistoryId) {
+                    throw new Error('No history record created yet. Run Create test first.');
+                }
+                const updated = await db.updateHistoryRecord(testHistoryId, { visitCount: 5 });
+                displayResult('history-result', updated);
+            } catch (error) {
+                displayResult('history-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testHistoryDelete() {
+            try {
+                if (!testHistoryId) {
+                    throw new Error('No history record created yet. Run Create test first.');
+                }
+                const result = await db.deleteHistoryRecord(testHistoryId);
+                displayResult('history-result', `Deleted history record: ${result}`);
+                testHistoryId = null;
+            } catch (error) {
+                displayResult('history-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testHistoryDateRange() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const records = await db.getHistoryByDateRange(today, today);
+                displayResult('history-result', `Found ${records.length} records for today`);
+            } catch (error) {
+                displayResult('history-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testHistoryDomain() {
+            try {
+                const records = await db.getHistoryByDomain('github.com');
+                displayResult('history-result', `Found ${records.length} records for github.com`);
+            } catch (error) {
+                displayResult('history-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Classified Cache Tests
+        async function testClassifiedCreate() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const data = { categories: ['work', 'development'], analysis: 'Test analysis' };
+                const result = await db.saveClassifiedData(today, data);
+                displayResult('classified-result', result);
+            } catch (error) {
+                displayResult('classified-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testClassifiedRead() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const result = await db.getClassifiedData(today);
+                displayResult('classified-result', result);
+            } catch (error) {
+                displayResult('classified-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testClassifiedDelete() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const result = await db.deleteClassifiedData(today);
+                displayResult('classified-result', `Deleted classified data: ${result}`);
+            } catch (error) {
+                displayResult('classified-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testClassifiedDateRange() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const records = await db.getClassifiedDataByDateRange(today, today);
+                displayResult('classified-result', `Found ${records.length} classified records for today`);
+            } catch (error) {
+                displayResult('classified-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Diary Tests
+        async function testDiaryCreate() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const result = await db.saveDiary(today, 'This is a test diary entry for CRUD operations.', 'Test Diary');
+                displayResult('diary-result', result);
+            } catch (error) {
+                displayResult('diary-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testDiaryRead() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const result = await db.getDiary(today);
+                displayResult('diary-result', result);
+            } catch (error) {
+                displayResult('diary-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testDiaryUpdate() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const result = await db.updateDiaryTags(today, ['test', 'crud', 'database']);
+                displayResult('diary-result', result);
+            } catch (error) {
+                displayResult('diary-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testDiaryDelete() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const result = await db.deleteDiary(today);
+                displayResult('diary-result', `Deleted diary: ${result}`);
+            } catch (error) {
+                displayResult('diary-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testDiaryDateRange() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const records = await db.getDiariesByDateRange(today, today);
+                displayResult('diary-result', `Found ${records.length} diary records for today`);
+            } catch (error) {
+                displayResult('diary-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Annual Report Tests
+        async function testReportCreate() {
+            try {
+                const year = new Date().getFullYear();
+                const reportData = { 
+                    summary: { totalDays: 365, activeDays: 200 },
+                    categories: ['work', 'personal'],
+                    insights: 'Test annual report data'
+                };
+                const result = await db.saveAnnualReport(year, reportData);
+                displayResult('report-result', result);
+            } catch (error) {
+                displayResult('report-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testReportRead() {
+            try {
+                const year = new Date().getFullYear();
+                const result = await db.getAnnualReport(year);
+                displayResult('report-result', result);
+            } catch (error) {
+                displayResult('report-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testReportDelete() {
+            try {
+                const year = new Date().getFullYear();
+                const result = await db.deleteAnnualReport(year);
+                displayResult('report-result', `Deleted annual report: ${result}`);
+            } catch (error) {
+                displayResult('report-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testReportYearRange() {
+            try {
+                const year = new Date().getFullYear();
+                const records = await db.getAnnualReportsByYearRange(year - 1, year + 1);
+                displayResult('report-result', `Found ${records.length} reports in year range`);
+            } catch (error) {
+                displayResult('report-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Settings Tests
+        async function testSettingCreate() {
+            try {
+                const result = await db.saveSetting('test-setting', { value: 'test', enabled: true }, 'testing');
+                displayResult('setting-result', result);
+            } catch (error) {
+                displayResult('setting-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testSettingRead() {
+            try {
+                const result = await db.getSetting('test-setting');
+                displayResult('setting-result', result);
+            } catch (error) {
+                displayResult('setting-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testSettingDelete() {
+            try {
+                const result = await db.deleteSetting('test-setting');
+                displayResult('setting-result', `Deleted setting: ${result}`);
+            } catch (error) {
+                displayResult('setting-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testSettingCategory() {
+            try {
+                const records = await db.getSettingsByCategory('testing');
+                displayResult('setting-result', `Found ${records.length} settings in testing category`);
+            } catch (error) {
+                displayResult('setting-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Advanced Tests
+        async function testSearchAll() {
+            try {
+                const results = await db.searchAll('test');
+                displayResult('advanced-result', results);
+            } catch (error) {
+                displayResult('advanced-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testBulkOperations() {
+            try {
+                const records = [
+                    {
+                        timestamp: Date.now(),
+                        url: 'https://example1.com',
+                        title: 'Example 1',
+                        domain: 'example1.com'
+                    },
+                    {
+                        timestamp: Date.now() + 1000,
+                        url: 'https://example2.com',
+                        title: 'Example 2',
+                        domain: 'example2.com'
+                    }
+                ];
+                const ids = await db.bulkAddHistory(records);
+                displayResult('advanced-result', `Bulk added ${ids.length} records with IDs: ${ids.join(', ')}`);
+            } catch (error) {
+                displayResult('advanced-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testExportData() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const exportData = await db.exportDataByDateRange(today, today);
+                displayResult('advanced-result', `Exported data: ${Object.keys(exportData).join(', ')}`);
+            } catch (error) {
+                displayResult('advanced-result', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initializeDatabase);
+    </script>
+</body>
+</html>
