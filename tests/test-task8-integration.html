@@ -20,7 +20,7 @@
         <h3>✅ Sub-task 1: Navigation Link to Data Manager</h3>
         <p>Status: <strong>Completed</strong></p>
         <p>✓ Added openDataManager() method to dashboard.js</p>
-        <p>✓ Data manager button already exists in dashboard.html with proper event listener</p>
+        <p>✓ Data manager button already exists in pages/dashboard.html with proper event listener</p>
         <button onclick="testDataManagerNavigation()">Test Data Manager Navigation</button>
         <div id="nav-test-result"></div>
     </div>
@@ -28,7 +28,7 @@
     <div class="test-section info">
         <h3>✅ Sub-task 2: Update manifest.json</h3>
         <p>Status: <strong>Completed</strong></p>
-        <p>✓ Added web_accessible_resources for data-manager.html</p>
+        <p>✓ Added web_accessible_resources for pages/data-manager.html</p>
         <p>✓ Maintained existing permissions</p>
         <button onclick="testManifestUpdates()">Test Manifest Updates</button>
         <div id="manifest-test-result"></div>
@@ -47,9 +47,9 @@
     <div class="test-section info">
         <h3>✅ Sub-task 4: Migration Status and Button</h3>
         <p>Status: <strong>Completed</strong></p>
-        <p>✓ Added migration status indicator in settings.html</p>
+        <p>✓ Added migration status indicator in pages/settings.html</p>
         <p>✓ Added one-click migration button</p>
-        <p>✓ Added migration handling in background.js</p>
+        <p>✓ Added migration handling in scripts/background.js</p>
         <p>✓ Added storage status checking functionality</p>
         <button onclick="testMigrationFeatures()">Test Migration Features</button>
         <div id="migration-test-result"></div>
@@ -67,9 +67,9 @@
         <p>The integration features are now fully functional and provide a seamless user experience.</p>
     </div>
 
-    <script src="lib/idb.js"></script>
-    <script src="lib/mimir-db.js"></script>
-    <script src="lib/db-wrapper.js"></script>
+    <script src="../lib/idb.js"></script>
+    <script src="../lib/mimir-db.js"></script>
+    <script src="../lib/db-wrapper.js"></script>
     <script>
         function testDataManagerNavigation() {
             const result = document.getElementById('nav-test-result');
@@ -89,12 +89,12 @@
         function testManifestUpdates() {
             const result = document.getElementById('manifest-test-result');
             // Since we can't directly read manifest.json from here, we'll check if the page loads
-            fetch('data-manager.html')
+            fetch('../pages/data-manager.html')
                 .then(response => {
                     if (response.ok) {
-                        result.innerHTML = '<p style="color: green;">✅ data-manager.html is accessible</p>';
+                        result.innerHTML = '<p style="color: green;">✅ pages/data-manager.html is accessible</p>';
                     } else {
-                        result.innerHTML = '<p style="color: orange;">⚠️ data-manager.html may not be properly configured</p>';
+                        result.innerHTML = '<p style="color: orange;">⚠️ pages/data-manager.html may not be properly configured</p>';
                     }
                 })
                 .catch(error => {

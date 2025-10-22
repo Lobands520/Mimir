@@ -12,18 +12,18 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["data-manager.html", "test-service-worker-simple.html"],
+      "resources": ["pages/data-manager.html", "tests/test-service-worker-simple.html"],
       "matches": ["<all_urls>"]
     }
   ],
   "background": {
-    "service_worker": "background-debug.js"
+    "service_worker": "tests/background-debug.js"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "pages/popup.html",
     "default_title": "Mimir Debug"
   },
-  "options_page": "settings.html",
+  "options_page": "pages/settings.html",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
   },
