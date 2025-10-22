@@ -6,12 +6,12 @@ class MimirPopup {
 
     setupEventListeners() {
         document.getElementById('openDashboardBtn').addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('pages/dashboard.html') });
             window.close();
         });
         
         document.getElementById('openSettingsBtn').addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('pages/settings.html') });
             window.close();
         });
     }
