@@ -85,11 +85,11 @@ requirements.forEach(req => {
 // Check 7: Implementation files
 console.log('\n📁 Implementation Files:');
 const files = [
-    'data-manager.js - Main UI logic with all functionality',
-    'data-manager.html - Complete HTML structure',
-    'data-manager.css - Styling with responsive design',
-    'test-task5-verification.html - Comprehensive testing',
-    'verify-data-visualization.js - Automated verification'
+    'scripts/data-manager.js - Main UI logic with all functionality',
+    'pages/data-manager.html - Complete HTML structure',
+    'styles/data-manager.css - Styling with responsive design',
+    'tests/test-task5-verification.html - Comprehensive testing',
+    'tests/verify-data-visualization.js - Automated verification'
 ];
 
 files.forEach(file => {

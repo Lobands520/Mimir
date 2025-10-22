@@ -152,7 +152,7 @@
         function openDataManager() {
             try {
                 log('csp', '尝试打开数据管理器...', 'info');
-                window.open('data-manager.html', '_blank');
+                window.open('../pages/data-manager.html', '_blank');
                 log('csp', '✓ 数据管理器页面已打开，请检查是否有CSP错误', 'success');
             } catch (error) {
                 log('csp', `✗ 打开数据管理器失败: ${error.message}`, 'error');

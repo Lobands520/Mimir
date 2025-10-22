@@ -201,7 +201,7 @@ class MimirSettings {
     async loadSuggestions() {
         this.dom.suggestionsContainer.innerHTML = `<div class="placeholder" style="width: 100%; padding: 10px; font-size: 13px;">正在分析常用网站...</div>`;
         
-        // 从 background.js 获取数据和内置规则
+        // 从 scripts/background.js 获取数据和内置规则
         const data = await new Promise(resolve => {
             chrome.runtime.sendMessage({ action: 'getSuggestionData' }, resolve);
         });

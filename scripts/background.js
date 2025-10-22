@@ -1,5 +1,5 @@
 // Import database dependencies with service worker compatible error handling
-importScripts('lib/idb.js', 'lib/error-handler-sw.js', 'lib/mimir-db.js', 'lib/db-wrapper.js', 'lib/migration.js');
+importScripts('../lib/idb.js', '../lib/error-handler-sw.js', '../lib/mimir-db.js', '../lib/db-wrapper.js', '../lib/migration.js');
 
 // Mimir 后台服务
 class MimirBackgroundService {

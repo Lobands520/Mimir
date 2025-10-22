@@ -152,10 +152,10 @@ this.errorHandler = (typeof window !== 'undefined' ? window.mimirErrorHandler : 
 - `lib/mimir-db.js` - Enhanced with error handling integration
 - `lib/db-wrapper.js` - Comprehensive error handling for all operations
 - `lib/migration.js` - Migration-specific error handling
-- `background.js` - Service worker error handler integration
-- `data-manager.html` - Include error handling scripts
-- `settings.html` - Include error handling scripts
-- `dashboard.html` - Include error handling scripts
+- `scripts/background.js` - Service worker error handler integration
+- `pages/data-manager.html` - Include error handling scripts
+- `pages/settings.html` - Include error handling scripts
+- `pages/dashboard.html` - Include error handling scripts
 
 ## 🚀 Key Features
 
