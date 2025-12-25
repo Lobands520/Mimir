@@ -14,9 +14,9 @@
 - **All library files**: Fixed export statements to be context-aware
 
 ### 2. Fixed Database Wrapper Initialization Order
-- **background.js**: Moved database wrapper creation before service initialization
+- **scripts/background.js**: Moved database wrapper creation before service initialization
 - **lib/db-wrapper.js**: Removed duplicate error handler assignment
-- **background.js**: Added simple 'test' action for debugging
+- **scripts/background.js**: Added simple 'test' action for debugging
 
 ### 3. Enhanced Context Detection
 All library files now properly detect their execution context:
@@ -64,7 +64,7 @@ After these fixes:
 4. Check browser console for any remaining errors
 
 ## Key Changes Made
-- **6 files modified**: background.js, lib/mimir-db.js, lib/db-wrapper.js, lib/migration.js, lib/error-handler.js, lib/error-ui.js
+- **6 files modified**: scripts/background.js, lib/mimir-db.js, lib/db-wrapper.js, lib/migration.js, lib/error-handler.js, lib/error-ui.js
 - **4 test files created** for debugging and verification
 - **All window references** made context-aware
 - **Database initialization order** fixed

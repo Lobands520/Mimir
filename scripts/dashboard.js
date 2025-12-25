@@ -1754,15 +1754,11 @@ ${browsingData}
     }
 
     openSettings() {
-        chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
+        chrome.tabs.create({ url: chrome.runtime.getURL('pages/settings.html') });
     }
 
     openDataManager() {
-        chrome.tabs.create({ url: chrome.runtime.getURL('data-manager.html') });
-    }
-
-    openDataManager() {
-        chrome.tabs.create({ url: chrome.runtime.getURL('data-manager.html') });
+        chrome.tabs.create({ url: chrome.runtime.getURL('pages/data-manager.html') });
     }
 
     showLoading() {

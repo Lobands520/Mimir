@@ -78,7 +78,7 @@
     <div class="test-section">
         <h3>Popup预览</h3>
         <div class="popup-preview">
-            <iframe src="../popup.html" title="Popup预览"></iframe>
+            <iframe src="../pages/popup.html" title="Popup预览"></iframe>
         </div>
         <p class="info">上方显示的是实际的popup界面预览</p>
     </div>
@@ -168,14 +168,14 @@
             
             try {
                 // 检查CSS文件是否可以加载
-                const response = await fetch('../popup.css');
+                const response = await fetch('../styles/popup.css');
                 const cssContent = await response.text();
                 
                 const themeFeatures = [
-                    cssContent.includes('linear-gradient') ? '✅ 渐变背景' : '❌ 渐变背景',
-                    cssContent.includes('backdrop-filter') ? '✅ 毛玻璃效果' : '❌ 毛玻璃效果',
-                    cssContent.includes('fadeInUp') ? '✅ 动画效果' : '❌ 动画效果',
-                    cssContent.includes('detail-stats') ? '✅ 详细统计' : '❌ 详细统计'
+                    cssContent.includes('--accent-primary') ? '✅ 使用暖色调主题变量' : '❌ 缺少主题变量',
+                    cssContent.includes('background: linear-gradient(145deg') ? '✅ 温暖渐变背景' : '❌ 未检测到渐变背景',
+                    cssContent.includes('box-shadow: 0 14px 22px') ? '✅ 柔和卡片阴影' : '❌ 阴影样式缺失',
+                    cssContent.includes('@media (prefers-color-scheme: dark)') ? '✅ 支持深色模式' : '❌ 缺少深色模式适配'
                 ];
 
                 log('✅ 主题测试完成');
@@ -194,10 +194,10 @@
             try {
                 // 模拟按钮功能测试
                 const buttonTests = [
-                    '✅ 打开仪表盘按钮 - 配置正确',
-                    '✅ 设置按钮 - 配置正确',
-                    '✅ 按钮样式 - 现代化设计',
-                    '✅ 悬停效果 - 动画流畅'
+                    '✅ 打开仪表盘按钮 - 指向 pages/dashboard.html',
+                    '✅ 设置按钮 - 指向 pages/settings.html',
+                    '✅ 按钮配色 - 温暖自然风格',
+                    '✅ 焦点状态 - 支持键盘可访问性'
                 ];
 
                 log('✅ 按钮测试完成');

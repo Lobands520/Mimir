@@ -111,8 +111,8 @@
             log('开始测试HTML结构...');
             
             try {
-                // 模拟加载dashboard.html内容进行测试
-                const response = await fetch('../dashboard.html');
+                // 模拟加载 pages/dashboard.html 内容进行测试
+                const response = await fetch('../pages/dashboard.html');
                 const htmlContent = await response.text();
                 
                 // 检查今日浏览历史是否默认关闭（没有open属性）

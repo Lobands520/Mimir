@@ -1,4 +1,4 @@
-// 修复dashboard.html中的字符编码问题
+// 修复 pages/dashboard.html 中的字符编码问题
 // 在浏览器控制台中运行此脚本
 
 // 修复按钮文本

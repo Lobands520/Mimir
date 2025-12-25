@@ -60,7 +60,7 @@ ${((cat.count / report.totalItems) * 100).toFixed(1)}%
 ## 🔧 技术实现
 
 ### 数据处理流程：
-1. 从 `background.js` 获取年度原始数据
+1. 从 `scripts/background.js` 获取年度原始数据
 2. 使用现有的规则分类系统处理数据
 3. 生成月度统计和分类统计
 4. 格式化为可视化的报告格式

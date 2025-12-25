@@ -4,7 +4,7 @@ console.log('=== Background Debug Script Starting ===');
 // Test each import individually
 try {
     console.log('1. Importing idb...');
-    importScripts('lib/idb.js');
+    importScripts('../lib/idb.js');
     console.log('✓ idb imported');
     
     console.log('2. Testing idb availability...');
@@ -15,7 +15,7 @@ try {
     }
     
     console.log('3. Importing error handler...');
-    importScripts('lib/error-handler-sw.js');
+    importScripts('../lib/error-handler-sw.js');
     console.log('✓ error handler imported');
     
     console.log('4. Testing error handler...');
@@ -26,7 +26,7 @@ try {
     }
     
     console.log('5. Importing MimirDB...');
-    importScripts('lib/mimir-db.js');
+    importScripts('../lib/mimir-db.js');
     console.log('✓ MimirDB imported');
     
     console.log('6. Testing MimirDB...');
@@ -41,7 +41,7 @@ try {
     }
     
     console.log('7. Importing DatabaseWrapper...');
-    importScripts('lib/db-wrapper.js');
+    importScripts('../lib/db-wrapper.js');
     console.log('✓ DatabaseWrapper imported');
     
     console.log('8. Testing DatabaseWrapper...');
@@ -56,7 +56,7 @@ try {
     }
     
     console.log('9. Importing Migration...');
-    importScripts('lib/migration.js');
+    importScripts('../lib/migration.js');
     console.log('✓ Migration imported');
     
     console.log('10. All imports successful!');

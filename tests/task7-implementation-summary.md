@@ -26,7 +26,7 @@ Successfully migrated all existing codebase from chrome.storage.local to Indexed
   - Diary entries (`diary-{date}`)
   - Annual reports (`annual-report-{year}`)
 
-### 3. Updated Background Service (`background.js`)
+### 3. Updated Background Service (`scripts/background.js`)
 - **Changes Made**:
   - Added database wrapper imports via `importScripts()`
   - Updated settings initialization to use IndexedDB
@@ -54,7 +54,7 @@ Successfully migrated all existing codebase from chrome.storage.local to Indexed
   - `getDailyHistory()`
 
 ### 6. Updated HTML Files
-- **Files Updated**: `dashboard.html`, `settings.html`, `popup.html`, `data-manager.html`
+- **Files Updated**: `pages/dashboard.html`, `pages/settings.html`, `pages/popup.html`, `pages/data-manager.html`
 - **Changes Made**:
   - Added script imports for database dependencies:
     - `lib/idb.js`
