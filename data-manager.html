@@ -122,34 +122,34 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Object Stores:</label>
+                    <label>数据表：</label>
                     <div class="checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" name="stores" value="history" checked>
-                            <span>History</span>
+                            <span>历史记录</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" name="stores" value="classified_cache">
-                            <span>Classified Cache</span>
+                            <span>分类缓存</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" name="stores" value="diaries" checked>
-                            <span>Diaries</span>
+                            <span>日记</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" name="stores" value="annual_reports" checked>
-                            <span>Reports</span>
+                            <span>年度报告</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" name="stores" value="settings">
-                            <span>Settings</span>
+                            <span>设置</span>
                         </label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelExport">Cancel</button>
-                <button class="btn btn-primary" id="confirmExport">Export</button>
+                <button class="btn btn-secondary" id="cancelExport">取消</button>
+                <button class="btn btn-primary" id="confirmExport">导出</button>
             </div>
         </div>
     </div>
@@ -158,7 +158,7 @@
     <div class="modal" id="recordModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="recordModalTitle">Record Details</h2>
+                <h2 id="recordModalTitle">记录详情</h2>
                 <button class="close-btn" id="closeRecordModal">&times;</button>
             </div>
             <div class="modal-body">
@@ -167,18 +167,20 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeRecord">Close</button>
-                <button class="btn btn-danger" id="deleteRecord">Delete</button>
+                <button class="btn btn-secondary" id="closeRecord">关闭</button>
+                <button class="btn btn-danger" id="deleteRecord">删除</button>
             </div>
         </div>
     </div>
 
     <!-- Load required libraries -->
+    <script src="lib/mimir-config.js"></script>
     <script src="lib/idb.js"></script>
     <script src="lib/error-handler.js"></script>
     <script src="lib/error-ui.js"></script>
     <script src="lib/mimir-db.js"></script>
     <script src="lib/db-wrapper.js"></script>
+    <script src="lib/mimir-core.js"></script>
     <script src="lib/migration.js"></script>
     <script src="data-manager.js"></script>
 </body>

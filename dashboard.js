@@ -1,7 +1,7 @@
 // Mimir AI日记生成器
 class MimirDashboard {
     constructor() {
-        this.currentDate = new Date().toISOString().split('T')[0];
+        this.currentDate = MimirConfig.formatDateLocal(new Date());
         this.currentData = [];
         this.currentDiary = '';
 
@@ -9,77 +9,16 @@ class MimirDashboard {
         this.setupNetworkMonitoring();
 
         // 固定分类标签集
-        this.categories = [
-            '编程与开发',
-            '工作与生产力',
-            '新闻与资讯',
-            '娱乐与视频',
-            '社交与社区',
-            '生活与消费',
-            '学术与教育',
-            'NSFW',
-            '其他'
-        ];
+        this.categories = MimirConfig.CATEGORIES.slice();
 
         // 域名映射表
-        this.domainMapping = {
-            '编程与开发': [
-                'github.com', 'gitlab.com', 'stackoverflow.com', 'pypi.org', 'npmjs.com',
-                'docs.python.org', 'developer.mozilla.org', 'go.dev', 'kaggle.com',
-                'aistudio.google.com', 'ai.google.dev', 'console.cloud.google.com',
-                'ollama.com', 'openwebui.com', 'cloud.google.com', 'console.aws.amazon.com',
-                'vercel.com', 'netlify.com', 'heroku.com', 'docker.com'
-            ],
-            '工作与生产力': [
-                'docs.google.com', 'drive.google.com', 'notion.so', 'miro.com',
-                'trello.com', 'slack.com', 'mail.google.com', 'outlook.office.com',
-                'feishu.cn', 'dingtalk.com', 'teams.microsoft.com', 'zoom.us',
-                'office.com', 'sharepoint.com'
-            ],
-            '新闻与资讯': [
-                'news.ycombinator.com', 'mp.weixin.qq.com', 'zhuanlan.zhihu.com',
-                'blog.google', 'medium.com', 'theverge.com', 'bbc.com', 'cnn.com',
-                'techcrunch.com', '36kr.com', 'sspai.com', 'infoq.cn'
-            ],
-            '娱乐与视频': [
-                'bilibili.com', 'youtube.com', 'netflix.com', 'iqiyi.com',
-                'youku.com', 'douyin.com', 'twitch.tv', 'tiktok.com',
-                'spotify.com', 'music.163.com'
-            ],
-            '社交与社区': [
-                'x.com', 'twitter.com', 'weibo.com', 'reddit.com', 'discord.com',
-                'telegram.org', 'zhihu.com', 'v2ex.com', 'douban.com',
-                'facebook.com', 'instagram.com'
-            ],
-            '生活与消费': [
-                'amazon.com', 'taobao.com', 'tmall.com', 'jd.com', 'meituan.com',
-                'ele.me', 'ctrip.com', 'booking.com', 'dianping.com', 'xiaohongshu.com',
-                'pinduoduo.com', 'suning.com'
-            ],
-            '学术与教育': [
-                'arxiv.org', 'acm.org', 'ieee.org', 'springer.com', 'nature.com',
-                'science.org', 'coursera.org', 'edx.org', 'cnki.net', 'scholar.google.com',
-                'researchgate.net', 'academia.edu'
-            ]
-        };
+        this.domainMapping = MimirConfig.clone(MimirConfig.DOMAIN_MAPPING);
 
         // 关键词映射表
-        this.keywordMapping = {
-            '编程与开发': ['API', 'SDK', 'Documentation', 'Docs', 'Dev', 'Repository', 'Issue', 'Pull Request', 'CLI', '云控制台', '控制台', '终端', '容器', '部署', '代码', '仓库'],
-            '工作与生产力': ['文档', '表格', '幻灯片', '项目', '任务', '会议', '日报', '审批', '后台', '邮件', '协作'],
-            '新闻与资讯': ['快讯', '要闻', '发布', '公告', '专栏', '博客', '评测', '长文', '新闻', '资讯'],
-            '娱乐与视频': ['直播', '番剧', '电影', '综艺', '搞笑', 'MV', '预告', '视频', '音乐'],
-            '社交与社区': ['讨论', '评论', '群组', '频道', '帖子', '动态', '聊天', '社区', '论坛'],
-            '生活与消费': ['下单', '购物', '机票', '酒店', '餐厅', '外卖', '支付', '账单', '商品', '订单'],
-            '学术与教育': ['论文', '期刊', '引用', '实验', '课程', '教程', 'Lecture', 'Syllabus', '学术', '研究']
-        };
+        this.keywordMapping = MimirConfig.clone(MimirConfig.KEYWORD_MAPPING);
 
         // 无意义条目过滤规则
-        this.filterPatterns = [
-            'New tab', 'Blank', 'about:blank', '登录', 'Sign in', '正在跳转',
-            '重定向', '验证码', 'auth', 'consent', 'callback', 'oauth',
-            'localhost', '127.0.0.1', '192.168.', 'Just a moment'
-        ];
+        this.filterPatterns = MimirConfig.FILTER_PATTERNS.slice();
 
         this.init();
     }
@@ -172,7 +111,7 @@ class MimirDashboard {
 
     setToday() {
         const dateInput = document.getElementById('dateInput');
-        const today = new Date().toISOString().split('T')[0];
+        const today = MimirConfig.formatDateLocal(new Date());
         dateInput.value = today;
         this.currentDate = today;
         this.loadDailyData();
@@ -183,7 +122,7 @@ class MimirDashboard {
         const dateInput = document.getElementById('dateInput');
         const currentDate = new Date(dateInput.value);
         currentDate.setDate(currentDate.getDate() - 1);
-        const newDate = currentDate.toISOString().split('T')[0];
+        const newDate = MimirConfig.formatDateLocal(currentDate);
         dateInput.value = newDate;
         this.loadDailyData();
     }
@@ -192,7 +131,7 @@ class MimirDashboard {
     goToNextDay() {
         const dateInput = document.getElementById('dateInput');
         const currentDate = new Date(dateInput.value);
-        const today = new Date().toISOString().split('T')[0];
+        const today = MimirConfig.formatDateLocal(new Date());
         
         // 不能超过今天
         if (dateInput.value >= today) {
@@ -201,7 +140,7 @@ class MimirDashboard {
         }
         
         currentDate.setDate(currentDate.getDate() + 1);
-        const newDate = currentDate.toISOString().split('T')[0];
+        const newDate = MimirConfig.formatDateLocal(currentDate);
         dateInput.value = newDate;
         this.loadDailyData();
     }
@@ -1499,7 +1438,7 @@ ${customPrompt}
         try {
             const currentDate = new Date(this.currentDate);
             currentDate.setDate(currentDate.getDate() - 1);
-            const previousDate = currentDate.toISOString().split('T')[0];
+            const previousDate = MimirConfig.formatDateLocal(currentDate);
             
             const diaryKey = `diary-${previousDate}`;
             const result = await window.dbWrapper.get(diaryKey);
@@ -2547,7 +2486,7 @@ ${browsingData}
                 const date = new Date(timestamp);
                 if (isNaN(date.getTime())) return null;
 
-                return item.date || date.toISOString().split('T')[0];
+                return item.date || MimirConfig.formatDateLocal(date);
             })
             .filter(date => date !== null);
 
@@ -2615,8 +2554,8 @@ ${browsingData}
         }
 
         return {
-            start: minDate.toISOString().split('T')[0],
-            end: maxDate.toISOString().split('T')[0]
+            start: MimirConfig.formatDateLocal(minDate),
+            end: MimirConfig.formatDateLocal(maxDate)
         };
     }
 
