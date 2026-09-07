@@ -1,33 +1,6 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mimir - 快速入口</title>
-    <link rel="icon" type="image/x-icon" href="icon/icon-32x32.ico">
-    <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-    <div class="popup-container">
-        <div class="logo">🧠</div>
-        <div class="app-name">Mimir</div>
-        <div class="app-desc">个人记忆与反思仪表盘</div>
-        
-        <div class="stats" id="stats">
-            <div class="loading">加载中...</div>
-        </div>
-        
-        <div class="action-buttons">
-            <button class="btn btn-primary" id="openDashboardBtn">打开仪表盘</button>
-            <button class="btn btn-secondary" id="openSettingsBtn">设置</button>
-        </div>
-    </div>
-
-    <script src="lib/mimir-config.js"></script>
-    <script src="lib/idb.js"></script>
-    <script src="lib/mimir-db.js"></script>
-    <script src="lib/db-wrapper.js"></script>
-    <script src="lib/mimir-core.js"></script>
-    <script src="popup.js"></script>
-</body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mimir</title><link rel="stylesheet" href="app.css"></head>
+<body class="popup"><a class="brand" href="dashboard.html" target="_blank"><img src="icon/icon-32x32.ico" alt="">Mimir</a>
+<div class="big-number" id="total">—</div><p class="muted">条已保存的历史记录</p>
+<dl class="details"><dt>本地采集</dt><dd id="captureState">正在连接后台…</dd><dt>最后补录</dt><dd id="lastCapture">—</dd><dt>外部备份</dt><dd id="backupState">—</dd><dt>最后上传</dt><dd id="lastBackup">—</dd></dl>
+<p id="statusError" class="error" hidden></p><div class="actions"><button class="primary" id="sync">立即同步</button><button id="open">打开档案</button></div>
+<div class="notice" id="notice" role="status"></div><a href="settings.html" target="_blank">设置与数据恢复</a><script type="module" src="popup.js"></script></body></html>
