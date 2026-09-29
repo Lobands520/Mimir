@@ -45,6 +45,14 @@ function remote() {
 function backup(database, mock) { return new BackupService(database, new GitHubClient({ owner: 'user', repo: 'archive', branch: 'main', token: 'secret-token' }, mock.fetch)); }
 async function drain(service, max = 1000) { for (let i = 0; i < max; i++) { if (!(await service.state()).job) return; await service.step(); } throw new Error('Backup did not finish'); }
 
+test('default GitHub client calls the global fetch without a foreign receiver', async () => {
+  const original = globalThis.fetch; let receiver = 'unset';
+  globalThis.fetch = function () { receiver = this; return Promise.resolve(new Response('{}')); };
+  try { await new GitHubClient({ owner: 'user', repo: 'archive', branch: 'main', token: 't' }).request('/repos/user/archive'); }
+  finally { globalThis.fetch = original; }
+  assert.ok(receiver === undefined || receiver === globalThis, 'browsers throw "Illegal invocation" for any other receiver');
+});
+
 test('individual visits survive repeated sync and title changes; legacy snapshots reconcile', async () => {
   const database = db();
   assert.equal((await database.putRecords([row(), row('2')])).inserted, 2);
