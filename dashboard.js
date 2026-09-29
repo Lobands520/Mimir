@@ -29,18 +29,30 @@ async function loadPage(token) {
   nextCursor = cursor; $('next').disabled = !cursor; $('previous').disabled = pageNumber === 0;
   $('pageLabel').textContent = `第 ${pageNumber + 1} 页 · ${rows.length} 条`;
 }
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+function renderRanking() {
+  if (!stats) return;
+  const column = Number($('rankBy').value);
+  const rows = stats.ranking.filter(entry => !($('hideLocal').checked && LOCAL_HOSTS.has(entry[0]))).sort((a, b) => b[column] - a[column] || b[1] - a[1]).slice(0, 7);
+  $('domainChart').replaceChildren();
+  const max = rows[0]?.[column] || 1;
+  for (const [name, visits, urls, days] of rows) {
+    const line = document.createElement('div'); line.className = 'bar-row';
+    const label = document.createElement('span'); label.className = 'bar-label';
+    const link = document.createElement('button'); link.type = 'button'; link.className = 'link'; link.textContent = name; link.title = `查看 ${name} 的记录`;
+    link.addEventListener('click', () => { $('domain').value = name; $('historyTab').click(); void search(); });
+    const detail = document.createElement('small'); detail.textContent = `${visits.toLocaleString()} 次 · ${urls.toLocaleString()} 网址 · ${days.toLocaleString()} 天`;
+    label.append(link, detail);
+    const track = document.createElement('div'); track.className = 'bar-track'; const fill = document.createElement('div'); fill.className = 'bar-fill'; fill.style.width = `${[visits, urls, days][column - 1] / max * 100}%`; track.append(fill);
+    const number = document.createElement('span'); number.textContent = [visits, urls, days][column - 1].toLocaleString(); line.append(label, track, number); $('domainChart').append(line);
+  }
+  if (!rows.length) $('domainChart').textContent = '暂无数据';
+}
+$('rankBy').addEventListener('change', renderRanking); $('hideLocal').addEventListener('change', renderRanking);
 function renderStats(value) {
   for (const [id, count] of Object.entries({ rangeTotal: value.total, uniqueUrls: value.uniqueUrls, domainCount: value.domainCount, activeDays: value.days.length })) $(id).textContent = count.toLocaleString();
   $('matchedCount').textContent = `匹配 ${value.total.toLocaleString()} 条记录`;
-  $('domainChart').replaceChildren();
-  const max = value.domains[0]?.[1] || 1;
-  for (const [name, count] of value.domains.slice(0, 7)) {
-    const line = document.createElement('div'); line.className = 'bar-row';
-    const label = document.createElement('span'); label.className = 'bar-label'; label.textContent = name; label.title = name;
-    const track = document.createElement('div'); track.className = 'bar-track'; const fill = document.createElement('div'); fill.className = 'bar-fill'; fill.style.width = `${count / max * 100}%`; track.append(fill);
-    const number = document.createElement('span'); number.textContent = count.toLocaleString(); line.append(label, track, number); $('domainChart').append(line);
-  }
-  if (!value.total) $('domainChart').textContent = '暂无数据';
+  renderRanking();
   $('hourChart').replaceChildren(); const peak = Math.max(1, ...value.hours);
   value.hours.forEach((count, hour) => { const bar = document.createElement('div'); bar.className = 'hour'; bar.style.height = `${Math.max(2, count / peak * 100)}%`; bar.title = `${hour} 时：${count} 次`; $('hourChart').append(bar); });
   $('sampleLabel').textContent = `${value.total.toLocaleString()} 条记录 · ${value.samples.length} 条标题样本`;

@@ -179,6 +179,17 @@ test('pagination handles equal timestamps, absent keywords and exact domains', a
   assert.equal((await database.page({ query: 'no-match' })).rows.length, 0); await database.close();
 });
 
+test('domain ranking reports visits, distinct URLs and active days so refresh-heavy pages are visible', async () => {
+  const stats = new Statistics(); const at = day => new Date(2026, 8, day, 12).getTime();
+  const rows = [];
+  for (let i = 0; i < 300; i++) rows.push(normalizeRecord(row(`c${i}`, { url: 'https://console.example/console', time: at(1) + i * 1000 })));
+  for (let day = 1; day <= 10; day++) rows.push(normalizeRecord(row(`d${day}`, { url: `https://daily.example/page${day % 2}`, time: at(day) })));
+  stats.add(rows); const result = stats.result();
+  assert.deepEqual(result.domains[0], ['console.example', 300, 1, 1]);
+  assert.deepEqual(result.ranking.find(e => e[0] === 'daily.example'), ['daily.example', 10, 2, 10]);
+  assert.equal(result.uniqueUrls, 3); assert.equal(result.domainCount, 2);
+});
+
 test('AI receives bounded evidence without full URLs, uses the exact selected model and can abort', async () => {
   const stats = new Statistics();
   stats.add(Array.from({ length: 10000 }, (_, i) => normalizeRecord(row(String(i), { time: time - i * DAY / 10, url: `https://example.com/private?secret=${i}`, title: i % 3 ? `Topic ${i}` : 'https://example.com/?private=key' }))));
