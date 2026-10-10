@@ -143,6 +143,8 @@ async function handle(message) {
     case 'sync': await serial(startSync); return { started: true };
     case 'query': return db.page(message.filter, message.cursor, message.limit);
     case 'scan': return db.scan(message.filter, message.cursor, 1000);
+    case 'purgePreview': return db.purge(message.filter, false);
+    case 'purge': return serial(() => db.purge(message.filter, true));
     case 'exportStart': return { until: await db.maxSeq() };
     case 'exportChunk': return exportChunk(message);
     case 'importRows':

@@ -36,12 +36,12 @@ function renderRanking() {
   const rows = stats.ranking.filter(entry => !($('hideLocal').checked && LOCAL_HOSTS.has(entry[0]))).sort((a, b) => b[column] - a[column] || b[1] - a[1]).slice(0, 7);
   $('domainChart').replaceChildren();
   const max = rows[0]?.[column] || 1;
-  for (const [name, visits, urls, days] of rows) {
+  for (const [name, visits, urls, days, records] of rows) {
     const line = document.createElement('div'); line.className = 'bar-row';
     const label = document.createElement('span'); label.className = 'bar-label';
     const link = document.createElement('button'); link.type = 'button'; link.className = 'link'; link.textContent = name; link.title = `查看 ${name} 的记录`;
     link.addEventListener('click', () => { $('domain').value = name; $('historyTab').click(); void search(); });
-    const detail = document.createElement('small'); detail.textContent = `${visits.toLocaleString()} 次 · ${urls.toLocaleString()} 网址 · ${days.toLocaleString()} 天`;
+    const detail = document.createElement('small'); detail.textContent = `${visits.toLocaleString()} 次 · ${urls.toLocaleString()} 网址 · ${days.toLocaleString()} 天${records > visits ? `（原始记录 ${records.toLocaleString()}）` : ''}`;
     label.append(link, detail);
     const track = document.createElement('div'); track.className = 'bar-track'; const fill = document.createElement('div'); fill.className = 'bar-fill'; fill.style.width = `${[visits, urls, days][column - 1] / max * 100}%`; track.append(fill);
     const number = document.createElement('span'); number.textContent = [visits, urls, days][column - 1].toLocaleString(); line.append(label, track, number); $('domainChart').append(line);
@@ -53,6 +53,8 @@ function renderStats(value) {
   for (const [id, count] of Object.entries({ rangeTotal: value.total, uniqueUrls: value.uniqueUrls, domainCount: value.domainCount, activeDays: value.days.length })) $(id).textContent = count.toLocaleString();
   $('matchedCount').textContent = `匹配 ${value.total.toLocaleString()} 条记录`;
   renderRanking();
+  $('mergeNote').textContent = value.merged ? `有 ${value.merged.toLocaleString()} 条是 60 秒内对同一网址的连续重复访问（如自动刷新、重定向循环）。排行和图表已把它们合并为一次，原始记录不受影响。` : '';
+  $('mergeNote').hidden = !value.merged;
   $('hourChart').replaceChildren(); const peak = Math.max(1, ...value.hours);
   value.hours.forEach((count, hour) => { const bar = document.createElement('div'); bar.className = 'hour'; bar.style.height = `${Math.max(2, count / peak * 100)}%`; bar.title = `${hour} 时：${count} 次`; $('hourChart').append(bar); });
   $('sampleLabel').textContent = `${value.total.toLocaleString()} 条记录 · ${value.samples.length} 条标题样本`;

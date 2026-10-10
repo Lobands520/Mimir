@@ -179,15 +179,33 @@ test('pagination handles equal timestamps, absent keywords and exact domains', a
   assert.equal((await database.page({ query: 'no-match' })).rows.length, 0); await database.close();
 });
 
-test('domain ranking reports visits, distinct URLs and active days so refresh-heavy pages are visible', async () => {
+test('domain ranking reports visits, distinct URLs and active days; bursts on one URL merge into one visit', async () => {
   const stats = new Statistics(); const at = day => new Date(2026, 8, day, 12).getTime();
   const rows = [];
   for (let i = 0; i < 300; i++) rows.push(normalizeRecord(row(`c${i}`, { url: 'https://console.example/console', time: at(1) + i * 1000 })));
+  for (let i = 0; i < 5; i++) rows.push(normalizeRecord(row(`s${i}`, { url: 'https://spaced.example/', time: at(2) + i * 120000 })));
   for (let day = 1; day <= 10; day++) rows.push(normalizeRecord(row(`d${day}`, { url: `https://daily.example/page${day % 2}`, time: at(day) })));
-  stats.add(rows); const result = stats.result();
-  assert.deepEqual(result.domains[0], ['console.example', 300, 1, 1]);
-  assert.deepEqual(result.ranking.find(e => e[0] === 'daily.example'), ['daily.example', 10, 2, 10]);
-  assert.equal(result.uniqueUrls, 3); assert.equal(result.domainCount, 2);
+  stats.add(rows.sort((a, b) => b.time - a.time)); const result = stats.result();
+  assert.deepEqual(result.ranking.find(e => e[0] === 'console.example'), ['console.example', 1, 1, 1, 300]);
+  assert.deepEqual(result.ranking.find(e => e[0] === 'spaced.example'), ['spaced.example', 5, 1, 1, 5]);
+  assert.deepEqual(result.ranking.find(e => e[0] === 'daily.example'), ['daily.example', 10, 2, 10, 10]);
+  assert.equal(result.total, 315); assert.equal(result.merged, 299); assert.equal(result.hours.reduce((a, b) => a + b, 0), 16);
+  assert.equal(result.uniqueUrls, 4); assert.equal(result.domainCount, 3);
+});
+
+test('purge previews, then deletes only one exact domain inside the date range', async () => {
+  const database = db(); const d = t => time + t;
+  await database.putRecords([
+    row('1', { url: 'https://bad.example/a', time: d(0) }), row('2', { url: 'https://bad.example/b', time: d(1000) }),
+    row('3', { url: 'https://bad.example/c', time: d(-3 * DAY) }), row('4', { url: 'https://good.example/', time: d(0) }),
+    row('5', { url: 'https://sub.bad.example/', time: d(0) })
+  ]);
+  const filter = { domain: 'BAD.example', start: d(-1000), end: d(2000) };
+  assert.equal(await database.purge(filter), 2); assert.equal(await database.count(), 5);
+  assert.equal(await database.purge(filter, true), 2); assert.equal(await database.count(), 3);
+  assert.equal((await database.page({ domain: 'bad.example' })).rows.length, 1);
+  await assert.rejects(database.purge({ domain: '', start: 0, end: 1 }, true), /域名/);
+  assert.equal(await database.count(), 3); await database.close();
 });
 
 test('AI receives bounded evidence without full URLs, uses the exact selected model and can abort', async () => {

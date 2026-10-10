@@ -1,5 +1,5 @@
 import { $, rpc, notice, showStatus } from './lib/client.js';
-import { base64ToBytes, decodeArchive, legacyRows, sha256, MAX_ARCHIVE_BYTES } from './lib/format.js';
+import { base64ToBytes, decodeArchive, legacyRows, sha256, dateBounds, MAX_ARCHIVE_BYTES } from './lib/format.js';
 let cancelled = false, fileBusy = false;
 function values() {
   return { enabled: $('enabled').checked,
@@ -118,4 +118,26 @@ async function importFiles(files, folderMode) {
 }
 $('files').addEventListener('change', async () => { await importFiles([...$('files').files], false); $('files').value = ''; });
 $('folder').addEventListener('change', async () => { await importFiles([...$('folder').files], true); $('folder').value = ''; });
+let purgePlan = null;
+function purgeFilter() {
+  const domain = $('purgeDomain').value.trim().toLowerCase();
+  if (!domain || !$('purgeStart').value || !$('purgeEnd').value) throw new Error('请填写网站域名、开始日期和结束日期');
+  return { domain, ...dateBounds($('purgeStart').value, $('purgeEnd').value) };
+}
+function resetPurge() { purgePlan = null; $('purgeRun').disabled = true; }
+for (const id of ['purgeDomain', 'purgeStart', 'purgeEnd']) $(id).addEventListener('input', resetPurge);
+$('purgePreview').addEventListener('click', async () => {
+  resetPurge();
+  try {
+    const filter = purgeFilter(); const count = await rpc('purgePreview', { filter });
+    $('purgeStatus').textContent = count ? `将删除 ${filter.domain} 在 ${$('purgeStart').value} 至 ${$('purgeEnd').value} 的 ${count.toLocaleString()} 条记录。确认无误后点“确认删除”。` : '这个范围内没有匹配的记录。';
+    if (count) { purgePlan = { filter, count }; $('purgeRun').disabled = false; }
+  } catch (e) { $('purgeStatus').textContent = e.message; }
+});
+$('purgeRun').addEventListener('click', async () => {
+  if (!purgePlan) return; const { filter, count } = purgePlan; resetPurge();
+  if (!confirm(`永久删除 ${filter.domain} 的 ${count.toLocaleString()} 条本地记录？\n\n浏览器可能已不再保存这些历史，删除后无法重新采集。`)) { $('purgeStatus').textContent = '已取消，没有删除任何记录。'; return; }
+  try { const removed = await rpc('purge', { filter }); $('purgeStatus').textContent = `已删除 ${removed.toLocaleString()} 条记录。`; await refresh(); }
+  catch (e) { $('purgeStatus').textContent = e.message; }
+});
 void load(); setInterval(refresh, 5000);
